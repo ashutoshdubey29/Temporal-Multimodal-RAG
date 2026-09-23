@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Temporal RAG | Educational Video AI</title>
+
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+
+        body {
+
+            min-height: 100vh;
+
+            color: white;
+
+            background:
+                radial-gradient(
+                    circle at 15% 15%,
+                    #243b80 0%,
+                    transparent 30%
+                ),
+
+                radial-gradient(
+                    circle at 85% 80%,
+                    #5b237a 0%,
+                    transparent 30%
+                ),
+
+                #070914;
+
+            overflow-x: hidden;
+        }
+
+
+        /* BACKGROUND GLOW */
+
+        .glow {
+
+            position: fixed;
+
+            width: 350px;
+            height: 350px;
+
+            border-radius: 50%;
+
+            filter: blur(100px);
+
+            opacity: 0.35;
+
+            pointer-events: none;
+
+            z-index: -1;
+        }
+
+
+        .glow.one {
+
+            background: #2563eb;
+
+            top: -100px;
+
+            left: -100px;
+        }
+
+
+        .glow.two {
+
+            background: #9333ea;
+
+            bottom: -100px;
+
+            right: -100px;
+        }
+
+
+        /* NAVBAR */
+
+        nav {
+
+            height: 75px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 7%;
+
+            border-bottom:
+                1px solid rgba(255,255,255,0.08);
+
+            backdrop-filter: blur(15px);
+        }
+
+
+        .logo {
+
+            font-size: 24px;
+
+            font-weight: bold;
+
+            letter-spacing: 1px;
+        }
+
+
+        .logo span {
+
+            color: #7c9cff;
+        }
+
+
+        .badge {
+
+            padding: 9px 16px;
+
+            border-radius: 30px;
+
+            background:
+                rgba(255,255,255,0.08);
+
+            border:
+                1px solid rgba(255,255,255,0.12);
+
+            color: #b9c7ff;
+
+            font-size: 13px;
+        }
+
+
+        /* HERO */
+
+        .hero {
+
+            text-align: center;
+
+            padding: 70px 20px 35px;
+        }
+
+
+        .hero h1 {
+
+            font-size:
+                clamp(42px, 6vw, 78px);
+
+            line-height: 1;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #ffffff,
+                    #91a9ff,
+                    #d29cff
+                );
+
+            -webkit-background-clip: text;
+
+            -webkit-text-fill-color: transparent;
+        }
+
+
+        .hero p {
+
+            margin-top: 20px;
+
+            color: #9da6c5;
+
+            font-size: 18px;
+
+            line-height: 1.5;
+        }
+
+
+        /* MAIN */
+
+        .container {
+
+            width: min(1000px, 90%);
+
+            margin: 20px auto 80px;
+        }
+
+
+        /* GLASS CARD */
+
+        .glass-card {
+
+            padding: 35px;
+
+            border-radius: 28px;
+
+            background:
+                rgba(255,255,255,0.055);
+
+            border:
+                1px solid rgba(255,255,255,0.12);
+
+            box-shadow:
+
+                0 30px 80px
+                rgba(0,0,0,0.45),
+
+                inset 0 1px
+                rgba(255,255,255,0.08);
+
+            backdrop-filter: blur(25px);
+        }
+
+
+        .section-card {
+
+            margin-top: 25px;
+        }
+
+
+        .section-title {
+
+            font-size: 24px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .section-description {
+
+            color: #929ab5;
+
+            margin-bottom: 20px;
+        }
+
+
+        /* UPLOAD BOX */
+
+        .upload-box {
+
+            border:
+                2px dashed
+                rgba(125,145,255,0.45);
+
+            border-radius: 22px;
+
+            padding: 55px 20px;
+
+            text-align: center;
+
+            background:
+                rgba(30,40,90,0.18);
+
+            transition: 0.3s;
+        }
+
+
+        .upload-box:hover {
+
+            transform: translateY(-4px);
+
+            border-color: #8298ff;
+
+            box-shadow:
+                0 15px 50px
+                rgba(70,90,255,0.18);
+        }
+
+
+        .upload-icon {
+
+            font-size: 55px;
+
+            margin-bottom: 15px;
+        }
+
+
+        .upload-box h2 {
+
+            margin-bottom: 10px;
+        }
+
+
+        .upload-box p {
+
+            color: #929ab5;
+
+            margin-bottom: 25px;
+        }
+
+
+        input[type="file"] {
+
+            display: none;
+        }
+
+
+        /* UPLOAD BUTTON */
+
+        .upload-btn {
+
+            display: inline-block;
+
+            padding: 14px 28px;
+
+            border-radius: 12px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #4f6cff,
+                    #8d4cff
+                );
+
+            cursor: pointer;
+
+            font-weight: bold;
+
+            box-shadow:
+                0 10px 30px
+                rgba(88,80,255,0.3);
+
+            transition: 0.3s;
+        }
+
+
+        .upload-btn:hover {
+
+            transform:
+                translateY(-3px)
+                scale(1.02);
+        }
+
+
+        .file-name {
+
+            margin-top: 18px;
+
+            color: #aeb9e9;
+        }
+
+
+        /* SUBMIT BUTTON */
+
+        .submit-btn {
+
+            margin-top: 22px;
+
+            width: 100%;
+
+            padding: 16px;
+
+            border: none;
+
+            border-radius: 13px;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #9333ea
+                );
+
+            transition: 0.3s;
+        }
+
+
+        .submit-btn:hover {
+
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+                0 15px 35px
+                rgba(80,70,255,0.3);
+        }
+
+
+        /* FEATURES */
+
+        .features {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3,1fr);
+
+            gap: 18px;
+
+            margin-top: 22px;
+        }
+
+
+        .feature {
+
+            padding: 22px;
+
+            border-radius: 18px;
+
+            background:
+                rgba(255,255,255,0.045);
+
+            border:
+                1px solid rgba(255,255,255,0.08);
+
+            transition: 0.3s;
+        }
+
+
+        .feature:hover {
+
+            transform:
+                translateY(-5px);
+
+            background:
+                rgba(255,255,255,0.07);
+        }
+
+
+        .feature-icon {
+
+            font-size: 28px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .feature h3 {
+
+            font-size: 16px;
+
+            margin-bottom: 7px;
+        }
+
+
+        .feature p {
+
+            color: #858da8;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        /* VIDEO */
+
+        .video-name {
+
+            color: #929ab5;
+
+            margin-bottom: 20px;
+        }
+
+
+        .video-player {
+
+            width: 100%;
+
+            max-height: 550px;
+
+            border-radius: 18px;
+
+            background: black;
+
+            border:
+                1px solid
+                rgba(255,255,255,0.12);
+
+            box-shadow:
+                0 20px 50px
+                rgba(0,0,0,0.4);
+        }
+
+
+        /* TRANSCRIPT */
+
+        .transcript-box {
+
+            max-height: 380px;
+
+            overflow-y: auto;
+
+            padding-right: 5px;
+        }
+
+
+        .transcript-item {
+
+            padding: 16px;
+
+            margin-bottom: 12px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(255,255,255,0.045);
+
+            border:
+                1px solid
+                rgba(255,255,255,0.08);
+
+            transition: 0.2s;
+        }
+
+
+        .transcript-item:hover {
+
+            background:
+                rgba(255,255,255,0.07);
+        }
+
+
+        .timestamp {
+
+            color: #91a9ff;
+
+            font-size: 13px;
+
+            font-weight: bold;
+        }
+
+
+        .transcript-text {
+
+            margin-top: 8px;
+
+            color: #d5d9eb;
+
+            line-height: 1.5;
+        }
+
+
+        /* ASK AI */
+
+        .question-input {
+
+            width: 100%;
+
+            padding: 16px;
+
+            border-radius: 12px;
+
+            border:
+                1px solid
+                rgba(255,255,255,0.12);
+
+            background:
+                rgba(255,255,255,0.06);
+
+            color: white;
+
+            outline: none;
+
+            font-size: 15px;
+        }
+
+
+        .question-input::placeholder {
+
+            color: #777f9c;
+        }
+
+
+        .question-result {
+
+            margin-top: 20px;
+
+            padding: 18px;
+
+            border-radius: 15px;
+
+            background:
+                rgba(255,255,255,0.05);
+
+            border:
+                1px solid
+                rgba(255,255,255,0.08);
+        }
+
+
+        .question-label {
+
+            color: #91a9ff;
+
+            font-size: 13px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .question-text {
+
+            color: #e0e3f2;
+
+            line-height: 1.6;
+        }
+
+
+        /* AI ANSWER */
+
+        .answer-box {
+
+            margin-top: 20px;
+
+            padding: 20px;
+
+            border-radius: 15px;
+
+            background:
+                rgba(37,99,235,0.10);
+
+            border:
+                1px solid
+                rgba(120,140,255,0.15);
+        }
+
+
+        .answer-title {
+
+            color: #91a9ff;
+
+            font-weight: bold;
+
+            margin-bottom: 10px;
+        }
+
+
+        /* JUMP BUTTON */
+
+        .jump-btn {
+
+            margin-top: 18px;
+
+            padding: 13px 22px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #9333ea
+                );
+
+            color: white;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.3s;
+        }
+
+
+        .jump-btn:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 10px 25px
+                rgba(80,70,255,0.3);
+        }
+
+
+        /* ERROR */
+
+        .error {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            border-radius: 12px;
+
+            background:
+                rgba(255,50,50,0.12);
+
+            border:
+                1px solid
+                rgba(255,80,80,0.25);
+
+            color: #ff9b9b;
+        }
+
+
+        /* FOOTER */
+
+        footer {
+
+            text-align: center;
+
+            color: #656c85;
+
+            padding-bottom: 30px;
+
+            font-size: 13px;
+        }
+
+
+        /* RESPONSIVE */
+
+        @media (max-width:700px) {
+
+            .features {
+
+                grid-template-columns: 1fr;
+            }
+
+
+            .glass-card {
+
+                padding: 20px;
+            }
+
+
+            .hero {
+
+                padding-top: 45px;
+            }
+
+
+            nav {
+
+                padding: 0 5%;
+            }
+
+
+            .badge {
+
+                display: none;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- BACKGROUND -->
+
+    <div class="glow one"></div>
+
+    <div class="glow two"></div>
+
+
+    <!-- NAVBAR -->
+
+    <nav>
+
+        <div class="logo">
+            Temporal<span>RAG</span>
+        </div>
+
+        <div class="badge">
+            AI Video Intelligence
+        </div>
+
+    </nav>
+
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <h1>
+            Understand Every<br>
+            Moment.
+        </h1>
+
+        <p>
+            Ask questions about educational videos
+            and find the exact moment where the answer appears.
+        </p>
+
+    </section>
+
+
+    <main class="container">
+
+
+        <!-- UPLOAD -->
+
+        <div class="glass-card">
+
+            <form
+                action="/upload"
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+                <div class="upload-box">
+
+                    <div class="upload-icon">
+                        🎥
+                    </div>
+
+                    <h2>
+                        Upload Educational Video
+                    </h2>
+
+                    <p>
+                        Upload a lecture, tutorial
+                        or educational video
+                    </p>
+
+
+                    <label
+                        class="upload-btn"
+                        for="video"
+                    >
+                        Choose Video
+                    </label>
+
+
+                    <input
+                        type="file"
+                        id="video"
+                        name="video"
+                        accept="video/*"
+                        required
+                    >
+
+
+                    <div
+                        class="file-name"
+                        id="fileName"
+                    >
+                        No video selected
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="submit-btn"
+                    type="submit"
+                >
+                    ⚡ Start AI Analysis
+                </button>
+
+            </form>
+
+
+            <!-- FEATURES -->
+
+            <div class="features">
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        🎙️
+                    </div>
+
+                    <h3>
+                        Speech Understanding
+                    </h3>
+
+                    <p>
+                        Extract lecture speech
+                        and preserve timestamps.
+                    </p>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        👁️
+                    </div>
+
+                    <h3>
+                        Visual + OCR
+                    </h3>
+
+                    <p>
+                        Understand slides,
+                        text and visual information.
+                    </p>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ⏱️
+                    </div>
+
+                    <h3>
+                        Temporal Grounding
+                    </h3>
+
+                    <p>
+                        Find the exact moment
+                        where the answer appears.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- VIDEO -->
+
+        {% if video_url %}
+
+        <div class="glass-card section-card">
+
+            <h2 class="section-title">
+                🎬 Uploaded Video
+            </h2>
+
+            <p class="video-name">
+                {{ filename }}
+            </p>
+
+
+            <video
+                id="videoPlayer"
+                class="video-player"
+                controls
+            >
+
+                <source
+                    src="{{ video_url }}"
+                    type="video/mp4"
+                >
+
+                Your browser does not support video playback.
+
+            </video>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- TRANSCRIPT -->
+
+        {% if transcript %}
+
+        <div class="glass-card section-card">
+
+            <h2 class="section-title">
+                📝 Video Transcript
+            </h2>
+
+            <p class="section-description">
+                Speech extracted from the uploaded video.
+            </p>
+
+
+            <div class="transcript-box">
+
+                {% for segment in transcript %}
+
+                <div class="transcript-item">
+
+                    <div class="timestamp">
+
+                        ⏱️
+                        {{ "%.2f"|format(segment.start) }}s
+                        -
+                        {{ "%.2f"|format(segment.end) }}s
+
+                    </div>
+
+
+                    <div class="transcript-text">
+
+                        {{ segment.text }}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ASK AI -->
+
+        <div class="glass-card section-card">
+
+            <h2 class="section-title">
+                🧠 Ask About Your Video
+            </h2>
+
+            <p class="section-description">
+                Ask a question about the uploaded lecture.
+            </p>
+
+
+            <form
+                action="/ask"
+                method="POST"
+            >
+
+                <input
+                    class="question-input"
+                    type="text"
+                    name="question"
+                    placeholder="What is explained in this video?"
+                    required
+                >
+
+
+                <button
+                    class="submit-btn"
+                    type="submit"
+                >
+                    🤖 Ask AI
+                </button>
+
+            </form>
+
+
+            {% if question %}
+
+            <div class="question-result">
+
+                <div class="question-label">
+                    YOUR QUESTION
+                </div>
+
+                <div class="question-text">
+                    {{ question }}
+                </div>
+
+
+                {% if answer %}
+
+                <div class="answer-box">
+
+                    <div class="answer-title">
+                        🤖 AI ANSWER
+                    </div>
+
+
+                    <div class="question-text">
+                        {{ answer }}
+                    </div>
+
+
+                    {% if timestamp %}
+
+                    <div
+                        class="timestamp"
+                        style="margin-top:15px;"
+                    >
+
+                        ⏱️ Timestamp:
+                        {{ timestamp }}
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="jump-btn"
+                        onclick="jumpToAnswer()"
+                    >
+                        ▶ Jump to Answer
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- ERROR -->
+
+        {% if error %}
+
+        <div class="error">
+
+            ⚠️ {{ error }}
+
+        </div>
+
+        {% endif %}
+
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        Temporal-Aware Multimodal RAG
+        • Educational Video Question Answering
+
+    </footer>
+
+
+    <!-- JAVASCRIPT -->
+
+    <script>
+
+
+        /* FILE NAME */
+
+        const videoInput =
+            document.getElementById("video");
+
+
+        const fileName =
+            document.getElementById("fileName");
+
+
+        if (videoInput) {
+
+            videoInput.addEventListener(
+                "change",
+                function () {
+
+                    if (this.files.length > 0) {
+
+                        fileName.textContent =
+                            "Selected: " +
+                            this.files[0].name;
+
+                    }
+
+                    else {
+
+                        fileName.textContent =
+                            "No video selected";
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* JUMP TO ANSWER */
+
+        function jumpToAnswer() {
+
+
+            const video =
+                document.getElementById("videoPlayer");
+
+
+            if (!video) {
+
+                alert("Video not found.");
+
+                return;
+
+            }
+
+
+            const timestampText =
+                "{{ timestamp|default('') }}";
+
+
+            if (!timestampText) {
+
+                alert(
+                    "Timestamp not available."
+                );
+
+                return;
+
+            }
+
+
+            /*
+                Example:
+                3224.28s - 3234.28s
+            */
+
+
+            const startTime =
+                parseFloat(
+                    timestampText.split("s")[0]
+                );
+
+
+            if (isNaN(startTime)) {
+
+                alert(
+                    "Invalid timestamp."
+                );
+
+                return;
+
+            }
+
+
+            /* Jump to exact time */
+
+            video.currentTime =
+                startTime;
+
+
+            /* Play video */
+
+            video.play();
+
+
+            /* Scroll to video */
+
+            video.scrollIntoView({
+
+                behavior: "smooth",
+
+                block: "center"
+
+            });
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>
