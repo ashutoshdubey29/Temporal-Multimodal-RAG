@@ -2,1262 +2,943 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Temporal RAG | Educational Video AI</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
     <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
+        :root {
+            --ink: #06070d;
+            --ink-2: #0c0e1a;
+            --glass: rgba(255, 255, 255, 0.055);
+            --glass-edge: rgba(255, 255, 255, 0.13);
+            --text: #eef0fa;
+            --muted: #8e95b3;
+            --blue: #6ea8ff;
+            --violet: #9b7bff;
+            --amber: #ffb347;
+            --danger: #ff8f8f;
+            --display: "Bricolage Grotesque", "Arial Black", Arial, sans-serif;
+            --body: "Instrument Sans", Arial, Helvetica, sans-serif;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { color-scheme: dark; scroll-behavior: smooth; }
 
         body {
-
             min-height: 100vh;
-
-            color: white;
-
-            background:
-                radial-gradient(
-                    circle at 15% 15%,
-                    #243b80 0%,
-                    transparent 30%
-                ),
-
-                radial-gradient(
-                    circle at 85% 80%,
-                    #5b237a 0%,
-                    transparent 30%
-                ),
-
-                #070914;
-
+            background: var(--ink);
+            color: var(--text);
+            font-family: var(--body);
+            font-size: 16px;
+            line-height: 1.55;
             overflow-x: hidden;
         }
 
-
-        /* BACKGROUND GLOW */
-
-        .glow {
-
+        /* 3D CANVAS (fixed behind everything) */
+        #scene {
             position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            display: block;
+        }
 
-            width: 350px;
-            height: 350px;
-
-            border-radius: 50%;
-
-            filter: blur(100px);
-
-            opacity: 0.35;
-
-            pointer-events: none;
-
+        .vignette {
+            position: fixed;
+            inset: 0;
             z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(6, 7, 13, 0.75) 100%),
+                linear-gradient(to bottom, rgba(6, 7, 13, 0.2), rgba(6, 7, 13, 0.55));
         }
 
+        a, button, input, label { -webkit-tap-highlight-color: transparent; }
+        :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 
-        .glow.one {
-
-            background: #2563eb;
-
-            top: -100px;
-
-            left: -100px;
+        /* NAV */
+        .nav-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: 14px 4% 0;
         }
-
-
-        .glow.two {
-
-            background: #9333ea;
-
-            bottom: -100px;
-
-            right: -100px;
-        }
-
-
-        /* NAVBAR */
 
         nav {
-
-            height: 75px;
-
+            max-width: 1120px;
+            margin: 0 auto;
+            height: 60px;
+            padding: 0 22px;
             display: flex;
-
             align-items: center;
-
             justify-content: space-between;
-
-            padding: 0 7%;
-
-            border-bottom:
-                1px solid rgba(255,255,255,0.08);
-
-            backdrop-filter: blur(15px);
+            border-radius: 999px;
+            background: rgba(10, 12, 24, 0.55);
+            border: 1px solid var(--glass-edge);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
         }
-
 
         .logo {
-
-            font-size: 24px;
-
-            font-weight: bold;
-
-            letter-spacing: 1px;
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: 21px;
+            letter-spacing: -0.02em;
         }
 
-
-        .logo span {
-
-            color: #7c9cff;
-        }
-
+        .logo span { color: var(--amber); }
 
         .badge {
-
-            padding: 9px 16px;
-
-            border-radius: 30px;
-
-            background:
-                rgba(255,255,255,0.08);
-
-            border:
-                1px solid rgba(255,255,255,0.12);
-
-            color: #b9c7ff;
-
             font-size: 13px;
+            color: #b9c4f5;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--glass-edge);
         }
-
 
         /* HERO */
-
         .hero {
-
-            text-align: center;
-
-            padding: 70px 20px 35px;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 12vh 4% 9vh;
         }
-
 
         .hero h1 {
-
-            font-size:
-                clamp(42px, 6vw, 78px);
-
-            line-height: 1;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    #ffffff,
-                    #91a9ff,
-                    #d29cff
-                );
-
-            -webkit-background-clip: text;
-
-            -webkit-text-fill-color: transparent;
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(44px, 8vw, 104px);
+            line-height: 0.96;
+            letter-spacing: -0.035em;
+            max-width: 12ch;
+            text-shadow: 0 8px 60px rgba(110, 168, 255, 0.25);
         }
-
 
         .hero p {
-
-            margin-top: 20px;
-
-            color: #9da6c5;
-
-            font-size: 18px;
-
-            line-height: 1.5;
+            margin-top: 26px;
+            max-width: 52ch;
+            font-size: clamp(16px, 2vw, 19px);
+            color: #a9b0cf;
         }
 
+        .hero-actions { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
 
-        /* MAIN */
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 26px;
+            border: 0;
+            border-radius: 14px;
+            font: 600 15px var(--body);
+            color: #0b0a12;
+            background: linear-gradient(135deg, #ffd27a, var(--amber));
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 12px 34px rgba(255, 179, 71, 0.28), inset 0 1px rgba(255, 255, 255, 0.5);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
 
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 18px 44px rgba(255, 179, 71, 0.38), inset 0 1px rgba(255, 255, 255, 0.5); }
+        .btn:active { transform: translateY(0); }
+        .btn.full { width: 100%; margin-top: 18px; }
+
+        .btn.ghost {
+            color: var(--text);
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            box-shadow: none;
+        }
+
+        .btn.ghost:hover { background: rgba(255, 255, 255, 0.1); box-shadow: none; }
+
+        /* LAYOUT */
         .container {
-
-            width: min(1000px, 90%);
-
-            margin: 20px auto 80px;
+            width: min(1120px, 92%);
+            margin: 0 auto 90px;
+            display: grid;
+            gap: 28px;
+            perspective: 1400px;
         }
-
-
-        /* GLASS CARD */
 
         .glass-card {
-
-            padding: 35px;
-
+            padding: 34px;
             border-radius: 28px;
-
-            background:
-                rgba(255,255,255,0.055);
-
-            border:
-                1px solid rgba(255,255,255,0.12);
-
-            box-shadow:
-
-                0 30px 80px
-                rgba(0,0,0,0.45),
-
-                inset 0 1px
-                rgba(255,255,255,0.08);
-
-            backdrop-filter: blur(25px);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--glass-edge);
+            box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.09);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
         }
 
-
-        .section-card {
-
-            margin-top: 25px;
+        .tilt {
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(.2, .8, .2, 1);
+            will-change: transform;
         }
-
 
         .section-title {
-
-            font-size: 24px;
-
-            margin-bottom: 8px;
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: clamp(24px, 3vw, 32px);
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
         }
 
+        .section-description { color: var(--muted); margin-bottom: 22px; max-width: 60ch; }
 
-        .section-description {
-
-            color: #929ab5;
-
-            margin-bottom: 20px;
-        }
-
-
-        /* UPLOAD BOX */
-
+        /* UPLOAD */
         .upload-box {
-
-            border:
-                2px dashed
-                rgba(125,145,255,0.45);
-
+            position: relative;
+            border: 1.5px dashed rgba(140, 165, 255, 0.45);
             border-radius: 22px;
-
-            padding: 55px 20px;
-
+            padding: 56px 22px;
             text-align: center;
-
-            background:
-                rgba(30,40,90,0.18);
-
-            transition: 0.3s;
+            background: radial-gradient(ellipse at 50% 0%, rgba(110, 168, 255, 0.12), transparent 70%), rgba(20, 28, 70, 0.2);
+            transition: border-color 0.3s, background 0.3s, transform 0.3s;
         }
 
-
-        .upload-box:hover {
-
-            transform: translateY(-4px);
-
-            border-color: #8298ff;
-
-            box-shadow:
-                0 15px 50px
-                rgba(70,90,255,0.18);
-        }
-
+        .upload-box:hover,
+        .upload-box.drag { border-color: var(--amber); transform: translateY(-3px); }
 
         .upload-icon {
-
-            font-size: 55px;
-
-            margin-bottom: 15px;
+            width: 74px;
+            height: 74px;
+            margin: 0 auto 18px;
+            display: grid;
+            place-items: center;
+            border-radius: 22px;
+            background: linear-gradient(135deg, rgba(110, 168, 255, 0.25), rgba(155, 123, 255, 0.25));
+            border: 1px solid var(--glass-edge);
+            transform: translateZ(40px);
+            animation: bob 5s ease-in-out infinite;
         }
 
+        @keyframes bob { 50% { transform: translateZ(40px) translateY(-7px); } }
 
-        .upload-box h2 {
+        .upload-box h2 { font-family: var(--display); font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .upload-box p { color: var(--muted); margin-bottom: 24px; }
 
-            margin-bottom: 10px;
+        input[type="file"] { display: none; }
+
+        .file-name { margin-top: 18px; color: #b9c4f5; font-size: 14px; word-break: break-all; }
+
+        /* FEATURES */
+        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+
+        .feature {
+            padding: 22px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.09);
         }
 
+        .feature svg { width: 28px; height: 28px; margin-bottom: 14px; stroke: var(--blue); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transform: translateZ(30px); }
+        .feature h3 { font-family: var(--display); font-size: 17px; margin-bottom: 6px; }
+        .feature p { color: var(--muted); font-size: 14px; }
 
-        .upload-box p {
+        /* VIDEO + TRANSCRIPT */
+        .workspace { display: grid; grid-template-columns: 1.7fr 1fr; gap: 28px; }
 
-            color: #929ab5;
+        .video-name { color: var(--muted); margin-bottom: 18px; word-break: break-all; }
 
-            margin-bottom: 25px;
+        .video-player {
+            width: 100%;
+            max-height: 520px;
+            display: block;
+            border-radius: 18px;
+            background: #000;
+            border: 1px solid var(--glass-edge);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
         }
 
+        /* answer marker on a timeline */
+        .timeline {
+            position: relative;
+            height: 8px;
+            margin-top: 18px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.1);
+        }
 
-        input[type="file"] {
+        .timeline .progress { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--violet)); }
 
+        .timeline .answer-range {
+            position: absolute;
+            top: -4px;
+            height: 16px;
+            min-width: 6px;
+            border-radius: 6px;
+            background: var(--amber);
+            box-shadow: 0 0 18px rgba(255, 179, 71, 0.7);
             display: none;
         }
 
+        .timeline-caption { margin-top: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-        /* UPLOAD BUTTON */
+        .transcript-box { max-height: 520px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
 
-        .upload-btn {
-
-            display: inline-block;
-
-            padding: 14px 28px;
-
-            border-radius: 12px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #4f6cff,
-                    #8d4cff
-                );
-
-            cursor: pointer;
-
-            font-weight: bold;
-
-            box-shadow:
-                0 10px 30px
-                rgba(88,80,255,0.3);
-
-            transition: 0.3s;
-        }
-
-
-        .upload-btn:hover {
-
-            transform:
-                translateY(-3px)
-                scale(1.02);
-        }
-
-
-        .file-name {
-
-            margin-top: 18px;
-
-            color: #aeb9e9;
-        }
-
-
-        /* SUBMIT BUTTON */
-
-        .submit-btn {
-
-            margin-top: 22px;
-
+        .seg {
+            display: block;
             width: 100%;
-
-            padding: 16px;
-
-            border: none;
-
-            border-radius: 13px;
-
-            color: white;
-
-            font-size: 16px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #9333ea
-                );
-
-            transition: 0.3s;
-        }
-
-
-        .submit-btn:hover {
-
-            transform:
-                translateY(-2px);
-
-            box-shadow:
-                0 15px 35px
-                rgba(80,70,255,0.3);
-        }
-
-
-        /* FEATURES */
-
-        .features {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3,1fr);
-
-            gap: 18px;
-
-            margin-top: 22px;
-        }
-
-
-        .feature {
-
-            padding: 22px;
-
-            border-radius: 18px;
-
-            background:
-                rgba(255,255,255,0.045);
-
-            border:
-                1px solid rgba(255,255,255,0.08);
-
-            transition: 0.3s;
-        }
-
-
-        .feature:hover {
-
-            transform:
-                translateY(-5px);
-
-            background:
-                rgba(255,255,255,0.07);
-        }
-
-
-        .feature-icon {
-
-            font-size: 28px;
-
-            margin-bottom: 12px;
-        }
-
-
-        .feature h3 {
-
-            font-size: 16px;
-
-            margin-bottom: 7px;
-        }
-
-
-        .feature p {
-
-            color: #858da8;
-
-            font-size: 13px;
-
-            line-height: 1.5;
-        }
-
-
-        /* VIDEO */
-
-        .video-name {
-
-            color: #929ab5;
-
-            margin-bottom: 20px;
-        }
-
-
-        .video-player {
-
-            width: 100%;
-
-            max-height: 550px;
-
-            border-radius: 18px;
-
-            background: black;
-
-            border:
-                1px solid
-                rgba(255,255,255,0.12);
-
-            box-shadow:
-                0 20px 50px
-                rgba(0,0,0,0.4);
-        }
-
-
-        /* TRANSCRIPT */
-
-        .transcript-box {
-
-            max-height: 380px;
-
-            overflow-y: auto;
-
-            padding-right: 5px;
-        }
-
-
-        .transcript-item {
-
-            padding: 16px;
-
-            margin-bottom: 12px;
-
+            text-align: left;
+            font: inherit;
+            color: inherit;
+            padding: 14px 16px;
+            margin-bottom: 10px;
             border-radius: 14px;
-
-            background:
-                rgba(255,255,255,0.045);
-
-            border:
-                1px solid
-                rgba(255,255,255,0.08);
-
-            transition: 0.2s;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
 
+        .seg:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(4px); }
+        .seg.active { background: rgba(255, 179, 71, 0.1); border-color: rgba(255, 179, 71, 0.55); }
 
-        .transcript-item:hover {
+        .timestamp { color: var(--blue); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .seg.active .timestamp { color: var(--amber); }
+        .transcript-text { margin-top: 6px; color: #d5d9eb; font-size: 15px; }
 
-            background:
-                rgba(255,255,255,0.07);
-        }
-
-
-        .timestamp {
-
-            color: #91a9ff;
-
-            font-size: 13px;
-
-            font-weight: bold;
-        }
-
-
-        .transcript-text {
-
-            margin-top: 8px;
-
-            color: #d5d9eb;
-
-            line-height: 1.5;
-        }
-
-
-        /* ASK AI */
+        /* ASK */
+        .ask-row { display: flex; gap: 12px; }
 
         .question-input {
-
-            width: 100%;
-
-            padding: 16px;
-
-            border-radius: 12px;
-
-            border:
-                1px solid
-                rgba(255,255,255,0.12);
-
-            background:
-                rgba(255,255,255,0.06);
-
-            color: white;
-
+            flex: 1;
+            min-width: 0;
+            padding: 17px 18px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-edge);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            font: 16px var(--body);
             outline: none;
-
-            font-size: 15px;
+            transition: border-color 0.25s, box-shadow 0.25s;
         }
 
+        .question-input:focus { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(255, 179, 71, 0.15); }
+        .question-input::placeholder { color: #757d9c; }
 
-        .question-input::placeholder {
+        .ask-row .btn { white-space: nowrap; }
 
-            color: #777f9c;
-        }
-
-
-        .question-result {
-
-            margin-top: 20px;
-
-            padding: 18px;
-
-            border-radius: 15px;
-
-            background:
-                rgba(255,255,255,0.05);
-
-            border:
-                1px solid
-                rgba(255,255,255,0.08);
-        }
-
-
-        .question-label {
-
-            color: #91a9ff;
-
-            font-size: 13px;
-
-            margin-bottom: 8px;
-        }
-
-
-        .question-text {
-
-            color: #e0e3f2;
-
-            line-height: 1.6;
-        }
-
-
-        /* AI ANSWER */
+        .question-result { margin-top: 24px; padding: 20px; border-radius: 18px; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.09); }
+        .question-label { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+        .question-text { color: #e3e6f5; line-height: 1.65; }
 
         .answer-box {
-
-            margin-top: 20px;
-
-            padding: 20px;
-
-            border-radius: 15px;
-
-            background:
-                rgba(37,99,235,0.10);
-
-            border:
-                1px solid
-                rgba(120,140,255,0.15);
-        }
-
-
-        .answer-title {
-
-            color: #91a9ff;
-
-            font-weight: bold;
-
-            margin-bottom: 10px;
-        }
-
-
-        /* JUMP BUTTON */
-
-        .jump-btn {
-
             margin-top: 18px;
-
-            padding: 13px 22px;
-
-            border: none;
-
-            border-radius: 10px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #9333ea
-                );
-
-            color: white;
-
-            font-weight: bold;
-
-            cursor: pointer;
-
-            transition: 0.3s;
+            padding: 22px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(110, 168, 255, 0.13), rgba(155, 123, 255, 0.08));
+            border: 1px solid rgba(130, 150, 255, 0.25);
         }
 
+        .answer-title { font-family: var(--display); font-weight: 700; color: var(--blue); margin-bottom: 10px; }
 
-        .jump-btn:hover {
-
-            transform: translateY(-2px);
-
-            box-shadow:
-                0 10px 25px
-                rgba(80,70,255,0.3);
+        .time-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 7px 14px;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 14px;
+            font-variant-numeric: tabular-nums;
+            color: var(--amber);
+            background: rgba(255, 179, 71, 0.1);
+            border: 1px solid rgba(255, 179, 71, 0.4);
         }
 
+        .jump-btn { margin-top: 16px; display: flex; }
 
-        /* ERROR */
+        .error { padding: 16px 18px; border-radius: 14px; background: rgba(255, 70, 70, 0.12); border: 1px solid rgba(255, 90, 90, 0.35); color: var(--danger); }
 
-        .error {
-
-            margin-top: 20px;
-
-            padding: 15px;
-
-            border-radius: 12px;
-
-            background:
-                rgba(255,50,50,0.12);
-
-            border:
-                1px solid
-                rgba(255,80,80,0.25);
-
-            color: #ff9b9b;
-        }
-
-
-        /* FOOTER */
-
-        footer {
-
+        /* LOADING OVERLAY */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: grid;
+            place-items: center;
             text-align: center;
-
-            color: #656c85;
-
-            padding-bottom: 30px;
-
-            font-size: 13px;
+            background: rgba(6, 7, 13, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
+        .overlay[hidden] { display: none; }
+
+        .loader {
+            width: 74px;
+            height: 74px;
+            margin: 0 auto 22px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--amber);
+            border-right-color: var(--blue);
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay h3 { font-family: var(--display); font-size: 22px; }
+        .overlay p { color: var(--muted); margin-top: 4px; }
+
+        /* HUD */
+        .hud {
+            position: fixed;
+            left: 22px;
+            bottom: 20px;
+            z-index: 10;
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+            color: var(--amber);
+            padding: 8px 14px;
+            border-radius: 99px;
+            background: rgba(10, 12, 24, 0.6);
+            border: 1px solid rgba(255, 179, 71, 0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            pointer-events: none;
+        }
+
+        footer { text-align: center; color: #656c85; padding: 0 0 36px; font-size: 13px; }
 
         /* RESPONSIVE */
-
-        @media (max-width:700px) {
-
-            .features {
-
-                grid-template-columns: 1fr;
-            }
-
-
-            .glass-card {
-
-                padding: 20px;
-            }
-
-
-            .hero {
-
-                padding-top: 45px;
-            }
-
-
-            nav {
-
-                padding: 0 5%;
-            }
-
-
-            .badge {
-
-                display: none;
-            }
+        @media (max-width: 900px) {
+            .workspace { grid-template-columns: 1fr; }
         }
 
+        @media (max-width: 700px) {
+            .features { grid-template-columns: 1fr; }
+            .glass-card { padding: 22px; }
+            .ask-row { flex-direction: column; }
+            .badge, .hud { display: none; }
+            .hero { padding-top: 8vh; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+            html { scroll-behavior: auto; }
+        }
     </style>
-
 </head>
-
 
 <body>
 
+    <!-- 3D BACKGROUND -->
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="vignette"></div>
 
-    <!-- BACKGROUND -->
+    <!-- LOADING -->
+    <div class="overlay" id="overlay" hidden role="status" aria-live="polite">
+        <div>
+            <div class="loader"></div>
+            <h3 id="overlayTitle">Working on it</h3>
+            <p id="overlayText">This can take a moment.</p>
+        </div>
+    </div>
 
-    <div class="glow one"></div>
-
-    <div class="glow two"></div>
-
+    <div class="hud" id="hud" aria-hidden="true">frame 00 · 00:00:00</div>
 
     <!-- NAVBAR -->
-
-    <nav>
-
-        <div class="logo">
-            Temporal<span>RAG</span>
-        </div>
-
-        <div class="badge">
-            AI Video Intelligence
-        </div>
-
-    </nav>
-
+    <div class="nav-wrap">
+        <nav>
+            <div class="logo">Temporal<span>RAG</span></div>
+            <div class="badge">AI Video Intelligence</div>
+        </nav>
+    </div>
 
     <!-- HERO -->
-
-    <section class="hero">
-
-        <h1>
-            Understand Every<br>
-            Moment.
-        </h1>
-
+    <header class="hero">
+        <h1>Ask the lecture. Land on the second it answers.</h1>
         <p>
-            Ask questions about educational videos
-            and find the exact moment where the answer appears.
+            Upload a lecture or tutorial, ask in plain language, and play the video
+            from the exact moment the answer is spoken or shown.
         </p>
-
-    </section>
-
+        <div class="hero-actions">
+            <a class="btn" href="#upload">Upload a video</a>
+            <a class="btn ghost" href="#ask">Ask a question</a>
+        </div>
+    </header>
 
     <main class="container">
 
-
         <!-- UPLOAD -->
+        <section class="glass-card tilt" id="upload" data-tilt="2">
 
-        <div class="glass-card">
+            <form action="/upload" method="POST" enctype="multipart/form-data" data-loading="Analysing your video" data-loading-text="Transcribing speech and reading slides. Longer videos take longer.">
 
-            <form
-                action="/upload"
-                method="POST"
-                enctype="multipart/form-data"
-            >
-
-                <div class="upload-box">
-
+                <div class="upload-box" id="dropZone">
                     <div class="upload-icon">
-                        🎥
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#cfdcff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg>
                     </div>
 
-                    <h2>
-                        Upload Educational Video
-                    </h2>
+                    <h2>Upload educational video</h2>
+                    <p>Drop a lecture or tutorial here, or choose a file.</p>
 
-                    <p>
-                        Upload a lecture, tutorial
-                        or educational video
-                    </p>
+                    <label class="btn" for="video">Choose video</label>
 
+                    <input type="file" id="video" name="video" accept="video/*" required>
 
-                    <label
-                        class="upload-btn"
-                        for="video"
-                    >
-                        Choose Video
-                    </label>
-
-
-                    <input
-                        type="file"
-                        id="video"
-                        name="video"
-                        accept="video/*"
-                        required
-                    >
-
-
-                    <div
-                        class="file-name"
-                        id="fileName"
-                    >
-                        No video selected
-                    </div>
-
+                    <div class="file-name" id="fileName">No video selected</div>
                 </div>
 
-
-                <button
-                    class="submit-btn"
-                    type="submit"
-                >
-                    ⚡ Start AI Analysis
-                </button>
-
+                <button class="btn full" type="submit">Start AI analysis</button>
             </form>
 
-
-            <!-- FEATURES -->
-
             <div class="features">
-
-
                 <div class="feature">
-
-                    <div class="feature-icon">
-                        🎙️
-                    </div>
-
-                    <h3>
-                        Speech Understanding
-                    </h3>
-
-                    <p>
-                        Extract lecture speech
-                        and preserve timestamps.
-                    </p>
-
+                    <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+                    <h3>Speech understanding</h3>
+                    <p>Extracts lecture speech and keeps every timestamp.</p>
                 </div>
 
-
                 <div class="feature">
-
-                    <div class="feature-icon">
-                        👁️
-                    </div>
-
-                    <h3>
-                        Visual + OCR
-                    </h3>
-
-                    <p>
-                        Understand slides,
-                        text and visual information.
-                    </p>
-
+                    <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <h3>Slides and on-screen text</h3>
+                    <p>Reads slides, diagrams and text shown in the video.</p>
                 </div>
 
-
                 <div class="feature">
-
-                    <div class="feature-icon">
-                        ⏱️
-                    </div>
-
-                    <h3>
-                        Temporal Grounding
-                    </h3>
-
-                    <p>
-                        Find the exact moment
-                        where the answer appears.
-                    </p>
-
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+                    <h3>Temporal grounding</h3>
+                    <p>Finds the exact moment where the answer appears.</p>
                 </div>
-
-
             </div>
-
-        </div>
-
-
-        <!-- VIDEO -->
-
-        {% if video_url %}
-
-        <div class="glass-card section-card">
-
-            <h2 class="section-title">
-                🎬 Uploaded Video
-            </h2>
-
-            <p class="video-name">
-                {{ filename }}
-            </p>
+        </section>
 
 
-            <video
-                id="videoPlayer"
-                class="video-player"
-                controls
-            >
+        <!-- VIDEO + TRANSCRIPT -->
+        {% if video_url or transcript %}
+        <div class="workspace">
 
-                <source
-                    src="{{ video_url }}"
-                    type="video/mp4"
-                >
+            {% if video_url %}
+            <section class="glass-card tilt" data-tilt="1.5">
 
-                Your browser does not support video playback.
+                <h2 class="section-title">Uploaded video</h2>
+                <p class="video-name">{{ filename }}</p>
 
-            </video>
+                <video id="videoPlayer" class="video-player" controls>
+                    <source src="{{ video_url }}" type="video/mp4">
+                    Your browser does not support video playback.
+                </video>
 
-        </div>
+                <div class="timeline" id="timeline" aria-hidden="true">
+                    <div class="progress" id="progress"></div>
+                    <div class="answer-range" id="answerRange"></div>
+                </div>
+                <div class="timeline-caption" id="timelineCaption">Timeline</div>
 
-        {% endif %}
-
-
-        <!-- TRANSCRIPT -->
-
-        {% if transcript %}
-
-        <div class="glass-card section-card">
-
-            <h2 class="section-title">
-                📝 Video Transcript
-            </h2>
-
-            <p class="section-description">
-                Speech extracted from the uploaded video.
-            </p>
+            </section>
+            {% endif %}
 
 
-            <div class="transcript-box">
+            {% if transcript %}
+            <section class="glass-card">
 
-                {% for segment in transcript %}
+                <h2 class="section-title">Video transcript</h2>
+                <p class="section-description">Select a line to play from that moment.</p>
 
-                <div class="transcript-item">
-
-                    <div class="timestamp">
-
-                        ⏱️
-                        {{ "%.2f"|format(segment.start) }}s
-                        -
-                        {{ "%.2f"|format(segment.end) }}s
-
-                    </div>
-
-
-                    <div class="transcript-text">
-
-                        {{ segment.text }}
-
-                    </div>
-
+                <div class="transcript-box" id="transcriptBox">
+                    {% for segment in transcript %}
+                    <button type="button" class="seg" data-start="{{ segment.start }}" data-end="{{ segment.end }}">
+                        <div class="timestamp">
+                            {{ "%.2f"|format(segment.start) }}s - {{ "%.2f"|format(segment.end) }}s
+                        </div>
+                        <div class="transcript-text">{{ segment.text }}</div>
+                    </button>
+                    {% endfor %}
                 </div>
 
-                {% endfor %}
-
-            </div>
+            </section>
+            {% endif %}
 
         </div>
-
         {% endif %}
 
 
         <!-- ASK AI -->
+        <section class="glass-card tilt" id="ask" data-tilt="1.5">
 
-        <div class="glass-card section-card">
+            <h2 class="section-title">Ask about your video</h2>
+            <p class="section-description">Ask a question about the uploaded lecture.</p>
 
-            <h2 class="section-title">
-                🧠 Ask About Your Video
-            </h2>
-
-            <p class="section-description">
-                Ask a question about the uploaded lecture.
-            </p>
-
-
-            <form
-                action="/ask"
-                method="POST"
-            >
-
-                <input
-                    class="question-input"
-                    type="text"
-                    name="question"
-                    placeholder="What is explained in this video?"
-                    required
-                >
-
-
-                <button
-                    class="submit-btn"
-                    type="submit"
-                >
-                    🤖 Ask AI
-                </button>
-
+            <form action="/ask" method="POST" data-loading="Searching the timeline" data-loading-text="Finding the moment that answers your question.">
+                <div class="ask-row">
+                    <input class="question-input" type="text" name="question" placeholder="What is explained in this video?" required>
+                    <button class="btn" type="submit">Ask AI</button>
+                </div>
             </form>
 
 
             {% if question %}
-
             <div class="question-result">
 
-                <div class="question-label">
-                    YOUR QUESTION
-                </div>
-
-                <div class="question-text">
-                    {{ question }}
-                </div>
-
+                <div class="question-label">Your question</div>
+                <div class="question-text">{{ question }}</div>
 
                 {% if answer %}
+                <div class="answer-box" id="answerBox" data-timestamp="{{ timestamp|default('') }}">
 
-                <div class="answer-box">
-
-                    <div class="answer-title">
-                        🤖 AI ANSWER
-                    </div>
-
-
-                    <div class="question-text">
-                        {{ answer }}
-                    </div>
-
+                    <div class="answer-title">AI answer</div>
+                    <div class="question-text">{{ answer }}</div>
 
                     {% if timestamp %}
-
-                    <div
-                        class="timestamp"
-                        style="margin-top:15px;"
-                    >
-
-                        ⏱️ Timestamp:
-                        {{ timestamp }}
-
+                    <div class="time-chip">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>
+                        Timestamp: {{ timestamp }}
                     </div>
 
-
-                    <button
-                        type="button"
-                        class="jump-btn"
-                        onclick="jumpToAnswer()"
-                    >
-                        ▶ Jump to Answer
-                    </button>
-
+                    <button type="button" class="btn jump-btn" onclick="jumpToAnswer()">Jump to answer</button>
                     {% endif %}
 
                 </div>
-
                 {% endif %}
 
             </div>
-
             {% endif %}
 
-        </div>
+        </section>
 
 
         <!-- ERROR -->
-
         {% if error %}
-
-        <div class="error">
-
-            ⚠️ {{ error }}
-
-        </div>
-
+        <div class="error" role="alert">{{ error }}</div>
         {% endif %}
-
 
     </main>
 
-
-    <!-- FOOTER -->
-
-    <footer>
-
-        Temporal-Aware Multimodal RAG
-        • Educational Video Question Answering
-
-    </footer>
+    <footer>Temporal-Aware Multimodal RAG • Educational Video Question Answering</footer>
 
 
-    <!-- JAVASCRIPT -->
+    <!-- THREE.JS (pinned, loaded from an allowed CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
+    /* ============================================================
+       3D SCENE: a helix of video frames, with an amber playhead
+       travelling through it as you scroll
+       ============================================================ */
+    (function () {
+        var canvas = document.getElementById("scene");
+        var hud = document.getElementById("hud");
+        if (!window.THREE || !canvas) return;
 
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var renderer;
 
-        /* FILE NAME */
-
-        const videoInput =
-            document.getElementById("video");
-
-
-        const fileName =
-            document.getElementById("fileName");
-
-
-        if (videoInput) {
-
-            videoInput.addEventListener(
-                "change",
-                function () {
-
-                    if (this.files.length > 0) {
-
-                        fileName.textContent =
-                            "Selected: " +
-                            this.files[0].name;
-
-                    }
-
-                    else {
-
-                        fileName.textContent =
-                            "No video selected";
-
-                    }
-
-                }
-            );
-
+        try {
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        } catch (e) {
+            return; /* no WebGL: the page still works with the plain dark background */
         }
 
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x06070d, 1);
 
-        /* JUMP TO ANSWER */
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x06070d, 0.038);
 
-        function jumpToAnswer() {
+        var camera = new THREE.PerspectiveCamera(58, 1, 0.1, 200);
 
+        var COUNT = 54, GAP = 3.1, RADIUS = 5.2;
+        var frameGeo = new THREE.PlaneGeometry(2.8, 1.75);
+        var edgeGeo = new THREE.EdgesGeometry(frameGeo);
+        var helix = new THREE.Group();
+        scene.add(helix);
 
-            const video =
-                document.getElementById("videoPlayer");
+        var cBlue = new THREE.Color(0x6ea8ff), cViolet = new THREE.Color(0x9b7bff);
 
+        for (var i = 0; i < COUNT; i++) {
+            var t = i / COUNT;
+            var a = i * 0.62;
+            var col = cBlue.clone().lerp(cViolet, (Math.sin(i * 0.4) + 1) / 2);
 
-            if (!video) {
+            var fill = new THREE.Mesh(frameGeo, new THREE.MeshBasicMaterial({
+                color: col, transparent: true, opacity: 0.07 + (i % 5 === 0 ? 0.09 : 0), side: THREE.DoubleSide
+            }));
+            var edge = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({
+                color: col, transparent: true, opacity: i % 5 === 0 ? 0.95 : 0.5
+            }));
 
-                alert("Video not found.");
+            var frame = new THREE.Group();
+            frame.add(fill, edge);
+            frame.position.set(Math.cos(a) * RADIUS, Math.sin(a) * RADIUS * 0.62, -i * GAP);
+            frame.lookAt(0, 0, frame.position.z);
+            frame.rotation.z += (Math.random() - 0.5) * 0.3;
+            helix.add(frame);
+        }
 
-                return;
+        /* amber playhead axis */
+        var axisLen = COUNT * GAP + 20;
+        var axisGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 10), new THREE.Vector3(0, 0, -axisLen)
+        ]);
+        scene.add(new THREE.Line(axisGeo, new THREE.LineBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.55 })));
 
+        var head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.16, 20, 20),
+            new THREE.MeshBasicMaterial({ color: 0xffd27a })
+        );
+        scene.add(head);
+
+        var halo = new THREE.Mesh(
+            new THREE.TorusGeometry(0.55, 0.018, 12, 64),
+            new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.8 })
+        );
+        scene.add(halo);
+
+        /* dust */
+        var P = 900, pos = new Float32Array(P * 3);
+        for (var p = 0; p < P; p++) {
+            pos[p * 3] = (Math.random() - 0.5) * 36;
+            pos[p * 3 + 1] = (Math.random() - 0.5) * 24;
+            pos[p * 3 + 2] = -Math.random() * (COUNT * GAP + 20) + 10;
+        }
+        var dustGeo = new THREE.BufferGeometry();
+        dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xaab8ff, size: 0.05, transparent: true, opacity: 0.7 }));
+        scene.add(dust);
+
+        /* input */
+        var mx = 0, my = 0, scrollT = 0, scrollNow = 0;
+
+        window.addEventListener("pointermove", function (e) {
+            mx = (e.clientX / window.innerWidth) * 2 - 1;
+            my = (e.clientY / window.innerHeight) * 2 - 1;
+        }, { passive: true });
+
+        function readScroll() {
+            var max = document.documentElement.scrollHeight - window.innerHeight;
+            scrollT = max > 0 ? Math.min(Math.max(window.scrollY / max, 0), 1) : 0;
+        }
+        window.addEventListener("scroll", readScroll, { passive: true });
+
+        function resize() {
+            var w = window.innerWidth, h = window.innerHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            readScroll();
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+        var clock = new THREE.Clock(), running = true;
+        document.addEventListener("visibilitychange", function () { running = !document.hidden; if (running) loop(); });
+
+        function loop() {
+            if (!running) return;
+            requestAnimationFrame(loop);
+
+            var time = clock.getElapsedTime();
+            scrollNow += (scrollT - scrollNow) * 0.06;
+
+            var travel = scrollNow * (COUNT * GAP - 14);
+            var camZ = 6 - travel;
+
+            camera.position.x += (mx * 1.4 - camera.position.x) * 0.04;
+            camera.position.y += (-my * 0.9 - camera.position.y) * 0.04;
+            camera.position.z = camZ;
+            camera.lookAt(0, 0, camZ - 12);
+
+            head.position.set(0, 0, camZ - 9);
+            halo.position.copy(head.position);
+            halo.rotation.x = Math.PI / 2 + Math.sin(time) * 0.2;
+            halo.scale.setScalar(1 + Math.sin(time * 2.2) * 0.12);
+
+            if (!reduce) {
+                helix.rotation.z = time * 0.05;
+                dust.rotation.z = -time * 0.01;
             }
 
+            renderer.render(scene, camera);
 
-            const timestampText =
-                "{{ timestamp|default('') }}";
-
-
-            if (!timestampText) {
-
-                alert(
-                    "Timestamp not available."
-                );
-
-                return;
-
+            if (hud) {
+                var secs = Math.floor(scrollNow * 5400);
+                hud.textContent = "frame " + pad(Math.floor(scrollNow * (COUNT - 1))) + " · " +
+                    pad(Math.floor(secs / 3600)) + ":" + pad(Math.floor((secs % 3600) / 60)) + ":" + pad(secs % 60);
             }
+        }
+        loop();
+    })();
 
 
-            /*
-                Example:
-                3224.28s - 3234.28s
-            */
+    /* ============================================================
+       3D TILT FOR CARDS
+       ============================================================ */
+    (function () {
+        var canTilt = window.matchMedia("(hover: hover)").matches &&
+                      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!canTilt) return;
 
+        document.querySelectorAll(".tilt").forEach(function (el) {
+            var max = parseFloat(el.dataset.tilt || "2");
 
-            const startTime =
-                parseFloat(
-                    timestampText.split("s")[0]
-                );
-
-
-            if (isNaN(startTime)) {
-
-                alert(
-                    "Invalid timestamp."
-                );
-
-                return;
-
-            }
-
-
-            /* Jump to exact time */
-
-            video.currentTime =
-                startTime;
-
-
-            /* Play video */
-
-            video.play();
-
-
-            /* Scroll to video */
-
-            video.scrollIntoView({
-
-                behavior: "smooth",
-
-                block: "center"
-
+            el.addEventListener("pointermove", function (e) {
+                var r = el.getBoundingClientRect();
+                var x = (e.clientX - r.left) / r.width - 0.5;
+                var y = (e.clientY - r.top) / r.height - 0.5;
+                el.style.transform = "rotateX(" + (-y * max).toFixed(2) + "deg) rotateY(" + (x * max).toFixed(2) + "deg)";
             });
 
+            el.addEventListener("pointerleave", function () {
+                el.style.transform = "";
+            });
+        });
+    })();
+
+
+    /* ============================================================
+       UPLOAD: file name, drag and drop, loading overlay
+       ============================================================ */
+    (function () {
+        var input = document.getElementById("video");
+        var label = document.getElementById("fileName");
+        var zone = document.getElementById("dropZone");
+
+        function showName() {
+            label.textContent = input.files.length > 0 ? "Selected: " + input.files[0].name : "No video selected";
         }
 
+        if (input) input.addEventListener("change", showName);
 
+        if (zone && input) {
+            ["dragenter", "dragover"].forEach(function (ev) {
+                zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add("drag"); });
+            });
+            ["dragleave", "drop"].forEach(function (ev) {
+                zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove("drag"); });
+            });
+            zone.addEventListener("drop", function (e) {
+                if (e.dataTransfer && e.dataTransfer.files.length) {
+                    input.files = e.dataTransfer.files;
+                    showName();
+                }
+            });
+        }
+
+        var overlay = document.getElementById("overlay");
+
+        document.querySelectorAll("form[data-loading]").forEach(function (form) {
+            form.addEventListener("submit", function () {
+                document.getElementById("overlayTitle").textContent = form.dataset.loading;
+                document.getElementById("overlayText").textContent = form.dataset.loadingText || "";
+                overlay.hidden = false;
+            });
+        });
+
+        /* hide the overlay if the browser restores the page from cache */
+        window.addEventListener("pageshow", function () { overlay.hidden = true; });
+    })();
+
+
+    /* ============================================================
+       VIDEO: transcript seek, live highlight, answer marker
+       ============================================================ */
+    var videoEl = document.getElementById("videoPlayer");
+
+    function parseRange(text) {
+        /* Example: "3224.28s - 3234.28s" */
+        var nums = (text || "").match(/\d+(?:\.\d+)?/g);
+        if (!nums) return null;
+        var start = parseFloat(nums[0]);
+        var end = nums.length > 1 ? parseFloat(nums[1]) : null;
+        return isNaN(start) ? null : { start: start, end: end };
+    }
+
+    function fmt(s) {
+        s = Math.max(0, Math.floor(s));
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+        return (h ? h + ":" : "") + (h && m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+    }
+
+    function seekTo(t) {
+        if (!videoEl) return;
+        videoEl.currentTime = t;
+        videoEl.play();
+        videoEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    /* JUMP TO ANSWER (button inside the answer box) */
+    function jumpToAnswer() {
+        if (!videoEl) { alert("Video not found."); return; }
+
+        var box = document.getElementById("answerBox");
+        var range = parseRange(box ? box.dataset.timestamp : "");
+
+        if (!range) { alert("Timestamp not available."); return; }
+
+        seekTo(range.start);
+    }
+
+    (function () {
+        if (!videoEl) return;
+
+        var segs = Array.prototype.slice.call(document.querySelectorAll(".seg"));
+        var progress = document.getElementById("progress");
+        var caption = document.getElementById("timelineCaption");
+        var answerRange = document.getElementById("answerRange");
+        var tbox = document.getElementById("transcriptBox");
+        var box = document.getElementById("answerBox");
+        var answer = box ? parseRange(box.dataset.timestamp) : null;
+
+        segs.forEach(function (s) {
+            s.addEventListener("click", function () { seekTo(parseFloat(s.dataset.start)); });
+        });
+
+        function placeAnswer() {
+            if (!answer || !videoEl.duration || !isFinite(videoEl.duration)) return;
+            var d = videoEl.duration;
+            var end = answer.end && answer.end > answer.start ? answer.end : answer.start + 1;
+            answerRange.style.display = "block";
+            answerRange.style.left = (answer.start / d * 100) + "%";
+            answerRange.style.width = Math.max((end - answer.start) / d * 100, 0.8) + "%";
+        }
+
+        videoEl.addEventListener("loadedmetadata", placeAnswer);
+        if (videoEl.readyState >= 1) placeAnswer();
+
+        var activeSeg = null;
+
+        videoEl.addEventListener("timeupdate", function () {
+            var t = videoEl.currentTime, d = videoEl.duration || 0;
+
+            if (d) progress.style.width = (t / d * 100) + "%";
+
+            caption.textContent = fmt(t) + (d ? " / " + fmt(d) : "") +
+                (answer ? "   •   answer starts at " + fmt(answer.start) : "");
+
+            var current = null;
+            for (var i = 0; i < segs.length; i++) {
+                if (t >= parseFloat(segs[i].dataset.start) && t < parseFloat(segs[i].dataset.end)) { current = segs[i]; break; }
+            }
+
+            if (current !== activeSeg) {
+                if (activeSeg) activeSeg.classList.remove("active");
+                if (current) {
+                    current.classList.add("active");
+                    if (tbox) tbox.scrollTo({ top: current.offsetTop - tbox.clientHeight / 2 + current.clientHeight / 2, behavior: "smooth" });
+                }
+                activeSeg = current;
+            }
+        });
+    })();
     </script>
-
 
 </body>
 
