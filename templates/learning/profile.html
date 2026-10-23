@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Profile & Settings{% endblock %}
+{% block page_title %}Learner Profile & Settings{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto;">
+  <div class="card" style="padding: 36px 32px; border-color: rgba(99, 102, 241, 0.25);">
+    
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+      <div class="avatar" style="width: 56px; height: 56px; font-size: 1.5rem;">
+        {{ user.full_name[:1].upper() }}
+      </div>
+      <div>
+        <h2 style="font-size: 1.35rem; font-weight: 800;">{{ user.full_name }}</h2>
+        <div style="font-size: 0.85rem; color: var(--text-dim);">{{ user.email }} &bull; Member since {{ user.created_at.strftime('%B %Y') if user.created_at else '' }}</div>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+      <span>⚠️</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth_routes.profile') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--accent-blue);">
+          Personal & Academic Info
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;">
+          <div class="form-group">
+            <label class="form-label" for="full_name">Full Name</label>
+            <input type="text" id="full_name" name="full_name" class="form-input" value="{{ user.full_name }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="education_level">Education Level</label>
+            <select id="education_level" name="education_level" class="form-select">
+              <option value="school" {% if profile.education_level == 'school' %}selected{% endif %}>School / High School</option>
+              <option value="diploma" {% if profile.education_level == 'diploma' %}selected{% endif %}>Diploma</option>
+              <option value="undergraduate" {% if profile.education_level == 'undergraduate' %}selected{% endif %}>Undergraduate (B.Tech / B.S. / BCA)</option>
+              <option value="postgraduate" {% if profile.education_level == 'postgraduate' %}selected{% endif %}>Postgraduate (M.Tech / M.S. / MCA)</option>
+              <option value="professional" {% if profile.education_level == 'professional' %}selected{% endif %}>Working Professional</option>
+              <option value="other" {% if profile.education_level == 'other' %}selected{% endif %}>Other / Lifelong Learner</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="field_of_study">Field of Study</label>
+            <input type="text" id="field_of_study" name="field_of_study" class="form-input" value="{{ profile.field_of_study or '' }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="current_semester">Semester / Year</label>
+            <input type="text" id="current_semester" name="current_semester" class="form-input" value="{{ profile.current_semester or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--accent-purple);">
+          Goals & Learning Preferences
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;">
+          <div class="form-group">
+            <label class="form-label" for="primary_goal">Primary Goal</label>
+            <select id="primary_goal" name="primary_goal" class="form-select">
+              <option value="Prepare for placements" {% if profile.primary_goal == 'Prepare for placements' %}selected{% endif %}>Prepare for campus / tech placements</option>
+              <option value="Learn a new technology" {% if profile.primary_goal == 'Learn a new technology' %}selected{% endif %}>Learn a new technology</option>
+              <option value="Prepare for interviews" {% if profile.primary_goal == 'Prepare for interviews' %}selected{% endif %}>Prepare for technical interviews</option>
+              <option value="Build practical projects" {% if profile.primary_goal == 'Build practical projects' %}selected{% endif %}>Build real-world projects</option>
+              <option value="Understand college subjects" {% if profile.primary_goal == 'Understand college subjects' %}selected{% endif %}>Understand college subjects</option>
+              <option value="Prepare for competitive examinations" {% if profile.primary_goal == 'Prepare for competitive examinations' %}selected{% endif %}>Competitive examinations (GATE/GRE)</option>
+              <option value="Career advancement" {% if profile.primary_goal == 'Career advancement' %}selected{% endif %}>Career advancement</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="target_skill">Target Skill</label>
+            <input type="text" id="target_skill" name="target_skill" class="form-input" value="{{ profile.target_skill or 'Python' }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="daily_study_minutes">Daily Study Time</label>
+            <select id="daily_study_minutes" name="daily_study_minutes" class="form-select">
+              <option value="20" {% if profile.daily_study_minutes == 20 %}selected{% endif %}>20 mins/day</option>
+              <option value="30" {% if profile.daily_study_minutes == 30 %}selected{% endif %}>30 mins/day</option>
+              <option value="45" {% if profile.daily_study_minutes == 45 %}selected{% endif %}>45 mins/day</option>
+              <option value="60" {% if profile.daily_study_minutes == 60 %}selected{% endif %}>60 mins/day</option>
+              <option value="120" {% if profile.daily_study_minutes == 120 %}selected{% endif %}>120 mins/day</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="preferred_difficulty">Preferred Difficulty</label>
+            <select id="preferred_difficulty" name="preferred_difficulty" class="form-select">
+              <option value="easy" {% if profile.preferred_difficulty == 'easy' %}selected{% endif %}>Easy</option>
+              <option value="medium" {% if profile.preferred_difficulty == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="hard" {% if profile.preferred_difficulty == 'hard' %}selected{% endif %}>Hard</option>
+              <option value="mixed" {% if profile.preferred_difficulty == 'mixed' %}selected{% endif %}>Mixed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label" for="career_goal">Career Vision (Optional)</label>
+          <input type="text" id="career_goal" name="career_goal" class="form-input" value="{{ profile.career_goal or '' }}">
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <button type="submit" class="btn btn-primary btn-lg">
+          Save Profile Changes ✓
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

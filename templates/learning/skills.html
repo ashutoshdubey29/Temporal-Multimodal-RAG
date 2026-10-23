@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}My Skills{% endblock %}
+{% block page_title %}Skill Diagnostics & Proficiency{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 20px auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Header Banner -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h2 style="font-size: 1.4rem; font-weight: 800;">Adaptive Knowledge Profile</h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 4px;">
+          Track your real mastery per topic. Confidence scales automatically with the number of quiz questions answered.
+        </p>
+      </div>
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary">
+        <span>⚡</span> Assess New Skill
+      </a>
+    </div>
+  </div>
+
+  <!-- Strong vs Weak Overview Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+    <!-- Strong Skills -->
+    <div class="card" style="border-top: 3px solid var(--accent-emerald);">
+      <h3 class="card-title" style="color: var(--accent-emerald);">
+        <span>🌟</span> Strongest Skills (&ge; 70%)
+      </h3>
+      <p class="card-subtitle" style="margin-bottom: 16px;">Topics where you demonstrated high retention</p>
+
+      {% if strong_skills %}
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for s in strong_skills %}
+        <div style="background-color: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm);">
+          <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">
+            <span>{{ s.skill_name }}</span>
+            <span style="color: var(--accent-emerald);">{{ s.estimated_proficiency }}%</span>
+          </div>
+          <div class="progress-bar-container" style="height: 6px; margin: 0 0 6px 0;">
+            <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-emerald);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim);">
+            <span>{{ s.correct_count }}/{{ s.attempted_count }} correct</span>
+            <span class="badge badge-success" style="font-size: 0.65rem;">{{ s.confidence_level.capitalize() }} Confidence</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding: 24px 12px;">
+        <div class="empty-state-icon" style="font-size: 1.8rem;">🎯</div>
+        <p style="font-size: 0.85rem;">No skills have reached the 70% threshold yet. Keep practicing!</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Needs Improvement -->
+    <div class="card" style="border-top: 3px solid var(--accent-rose);">
+      <h3 class="card-title" style="color: var(--accent-rose);">
+        <span>⚠️</span> Needs Improvement (&lt; 65%)
+      </h3>
+      <p class="card-subtitle" style="margin-bottom: 16px;">Topics flagged for focused revision and practice</p>
+
+      {% if weak_skills %}
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for s in weak_skills %}
+        <div style="background-color: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm);">
+          <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">
+            <span>{{ s.skill_name }}</span>
+            <span style="color: var(--accent-rose);">{{ s.estimated_proficiency }}%</span>
+          </div>
+          <div class="progress-bar-container" style="height: 6px; margin: 0 0 6px 0;">
+            <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-rose);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-dim); margin-top: 6px;">
+            <span>{{ s.correct_count }}/{{ s.attempted_count }} correct</span>
+            <a href="{{ url_for('learning_routes.quiz_generator', topic=s.skill_name, difficulty='easy') }}" class="btn btn-outline btn-sm" style="font-size: 0.7rem; padding: 2px 8px;">
+              Practice Topic
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding: 24px 12px;">
+        <div class="empty-state-icon" style="font-size: 1.8rem;">✨</div>
+        <p style="font-size: 0.85rem;">No lagging skills detected! You're performing well across assessed topics.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Complete Skills Table -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">All Tracked Skills</h3>
+        <p class="card-subtitle">Empirical skill history with sample-size confidence ratings</p>
+      </div>
+    </div>
+
+    {% if skills %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 12px;">Skill / Topic</th>
+            <th style="padding: 12px;">Proficiency</th>
+            <th style="padding: 12px;">Evidence Sample</th>
+            <th style="padding: 12px;">Confidence</th>
+            <th style="padding: 12px;">Trend</th>
+            <th style="padding: 12px; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in skills %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 14px 12px; font-weight: 600;">{{ s.skill_name }}</td>
+            <td style="padding: 14px 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="progress-bar-container" style="width: 80px; height: 6px; margin: 0;">
+                  <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%;"></div>
+                </div>
+                <span style="font-weight: 700;">{{ s.estimated_proficiency }}%</span>
+              </div>
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-muted);">
+              {{ s.correct_count }} / {{ s.attempted_count }} questions
+            </td>
+            <td style="padding: 14px 12px;">
+              <span class="badge {% if s.confidence_level == 'high' %}badge-success{% elif s.confidence_level == 'medium' %}badge-primary{% else %}badge-secondary{% endif %}">
+                {{ s.confidence_level.capitalize() }} ({{ (s.confidence_score * 100)|int }}%)
+              </span>
+            </td>
+            <td style="padding: 14px 12px;">
+              {% if s.trend == 'improving' %}
+                <span style="color: var(--accent-emerald); font-weight: 600;">↗ Improving</span>
+              {% elif s.trend == 'declining' %}
+                <span style="color: var(--accent-rose); font-weight: 600;">↘ Needs Work</span>
+              {% else %}
+                <span style="color: var(--text-dim);">→ Stable</span>
+              {% endif %}
+            </td>
+            <td style="padding: 14px 12px; text-align: right;">
+              <a href="{{ url_for('learning_routes.quiz_generator', topic=s.skill_name) }}" class="btn btn-outline btn-sm">
+                Quiz
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <div class="empty-state-title">No Tracked Skills Yet</div>
+      <p class="empty-state-desc">Take a quiz from an uploaded video or select a topic to build your skill record.</p>
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Generate Quiz</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

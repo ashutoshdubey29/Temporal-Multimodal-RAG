@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}AI Quiz Generator{% endblock %}
+{% block page_title %}Automatic AI Quiz Generator{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto;">
+  <div class="card" style="padding: 36px 32px; border-color: rgba(99, 102, 241, 0.25); box-shadow: var(--shadow-lg);">
+    
+    <div style="margin-bottom: 28px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span class="badge badge-primary">Multimodal Assessment Engine</span>
+      </div>
+      <h2 style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;">Generate Multiple-Choice Quiz</h2>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 4px;">
+        Extract conceptual questions directly from a video's timestamped transcript, or generate a targeted topic-based quiz.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+      <span>⚠️</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('learning_routes.quiz_generator') }}" id="quizGenForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <!-- Quiz Title -->
+      <div class="form-group">
+        <label class="form-label" for="title">Quiz Title</label>
+        <input type="text" id="title" name="title" class="form-input" placeholder="e.g. Lecture 3: Sorting Algorithms Mastery Quiz">
+        <div class="form-helper">Leave blank to auto-generate from video or topic name.</div>
+      </div>
+
+      <!-- Source Selection: Video vs Custom Topic -->
+      <div class="form-group">
+        <label class="form-label" for="video_session_id">Content Source</label>
+        <select id="video_session_id" name="video_session_id" class="form-select" onchange="toggleScopeInputs()">
+          <option value="">-- Standalone Topic Quiz (No Video Required) --</option>
+          {% if session.get('current_video_id') %}
+          <option value="active" selected>Active In-Memory Video Session ({{ session.get('current_video_id') }})</option>
+          {% endif %}
+          {% for v in user_videos %}
+          <option value="{{ v.id }}" {% if prefill_video_id == v.id %}selected{% endif %}>
+            Video: {{ v.title }} ({{ v.created_at.strftime('%b %d') if v.created_at else '' }})
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-helper">Questions will be grounded in the transcript with clickable timestamp evidence.</div>
+      </div>
+
+      <!-- Topic Focus (Optional) -->
+      <div class="form-group">
+        <label class="form-label" for="topic_focus">Topic Focus (Optional)</label>
+        <input type="text" id="topic_focus" name="topic_focus" class="form-input" placeholder="e.g. Functions, Binary Search Trees, Pointers, Gradient Descent" value="{{ prefill_topic or '' }}">
+        <div class="form-helper">Directs questions toward a specific concept or weak skill.</div>
+      </div>
+
+      <!-- Controls: Questions & Difficulty -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="num_questions">Number of Questions</label>
+          <select id="num_questions" name="num_questions" class="form-select">
+            <option value="5" selected>5 Questions (Quick Check)</option>
+            <option value="10">10 Questions (Standard Quiz)</option>
+            <option value="15">15 Questions (Comprehensive)</option>
+            <option value="20">20 Questions (Exam Simulation)</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="difficulty">Target Difficulty</label>
+          <select id="difficulty" name="difficulty" class="form-select">
+            <option value="easy" {% if prefill_diff == 'easy' %}selected{% endif %}>Easy (Foundational)</option>
+            <option value="medium" {% if prefill_diff == 'medium' or not prefill_diff %}selected{% endif %}>Medium (Conceptual & Application)</option>
+            <option value="hard" {% if prefill_diff == 'hard' %}selected{% endif %}>Hard (In-depth & Edge cases)</option>
+            <option value="mixed" {% if prefill_diff == 'mixed' %}selected{% endif %}>Mixed (Progressive Difficulty)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Scope: Entire Video vs Timestamp Section -->
+      <div id="scopeSection" style="background-color: var(--bg-surface); padding: 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 24px;">
+        <label class="form-label">Transcript Scope</label>
+        <div style="display: flex; gap: 20px; margin-bottom: 14px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer;">
+            <input type="radio" name="scope" value="entire" checked onchange="toggleScopeInputs()"> Entire Video Transcript
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer;">
+            <input type="radio" name="scope" value="section" id="scopeCustom" onchange="toggleScopeInputs()"> Specific Timestamp Range
+          </label>
+        </div>
+
+        <div id="timestampInputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <label class="form-label" for="start_sec" style="font-size: 0.75rem;">Start Time (seconds)</label>
+            <input type="number" id="start_sec" name="start_sec" class="form-input" placeholder="e.g. 0" min="0" step="0.5">
+          </div>
+          <div>
+            <label class="form-label" for="end_sec" style="font-size: 0.75rem;">End Time (seconds)</label>
+            <input type="number" id="end_sec" name="end_sec" class="form-input" placeholder="e.g. 300" min="0" step="0.5">
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button with Loading Indicator -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 14px;">
+        <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+          <span id="btnIcon">⚡</span>
+          <span id="btnText">Generate AI Quiz</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleScopeInputs() {
+    const isCustom = document.getElementById('scopeCustom').checked;
+    const tsInputs = document.getElementById('timestampInputs');
+    tsInputs.style.display = isCustom ? 'grid' : 'none';
+  }
+
+  document.getElementById('quizGenForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    const text = document.getElementById('btnText');
+    const icon = document.getElementById('btnIcon');
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    icon.textContent = '⏳';
+    text.textContent = 'Analyzing content & generating questions...';
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Learning History{% endblock %}
+{% block page_title %}Learning Activity History{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 20px auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header Banner -->
+  <div class="card">
+    <h2 style="font-size: 1.4rem; font-weight: 800;">Activity & Assessment History</h2>
+    <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 4px;">
+      Review past video lectures analyzed, transcripts generated, and completed quiz attempts.
+    </p>
+  </div>
+
+  <!-- Video Learning Sessions History -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title"><span>🎥</span> Video Learning Sessions</h3>
+        <p class="card-subtitle">Lectures, YouTube videos, and media files you've processed</p>
+      </div>
+      <a href="{{ url_for('home') }}" class="btn btn-primary btn-sm">Process New Video</a>
+    </div>
+
+    {% if videos %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 12px;">Title</th>
+            <th style="padding: 12px;">Type</th>
+            <th style="padding: 12px;">Transcript Source</th>
+            <th style="padding: 12px;">Date</th>
+            <th style="padding: 12px; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in videos %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 14px 12px; font-weight: 600; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ v.title }}
+            </td>
+            <td style="padding: 14px 12px;">
+              <span class="badge {% if v.video_type == 'youtube' %}badge-danger{% else %}badge-primary{% endif %}">
+                {{ v.video_type.capitalize() }}
+              </span>
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-muted);">
+              {{ v.transcript_source }} ({{ v.get_segments()|length }} segments)
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-dim);">
+              {{ v.created_at.strftime('%b %d, %Y') if v.created_at else '' }}
+            </td>
+            <td style="padding: 14px 12px; text-align: right;">
+              <a href="{{ url_for('learning_routes.quiz_generator', video_session_id=v.id) }}" class="btn btn-outline btn-sm">
+                Generate Quiz ⚡
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <div class="empty-state-icon">🎬</div>
+      <div class="empty-state-title">No Video Sessions Recorded</div>
+      <p class="empty-state-desc">Upload a video or enter a YouTube URL to begin your transcript library.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Quiz Attempts History -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title"><span>📝</span> Assessment Attempts</h3>
+        <p class="card-subtitle">Authoritative scores and submissions</p>
+      </div>
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-outline btn-sm">New Quiz</a>
+    </div>
+
+    {% if attempts %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 12px;">Quiz Title</th>
+            <th style="padding: 12px;">Score</th>
+            <th style="padding: 12px;">Accuracy</th>
+            <th style="padding: 12px;">Submitted At</th>
+            <th style="padding: 12px; text-align: right;">Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attempts %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 14px 12px; font-weight: 600;">
+              {{ a.quiz.title if a.quiz else 'Quiz Assessment' }}
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-muted);">
+              {{ a.correct_count }} / {{ a.total_questions }}
+            </td>
+            <td style="padding: 14px 12px;">
+              <span class="badge {% if a.percentage >= 80 %}badge-success{% elif a.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}">
+                {{ a.percentage }}%
+              </span>
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-dim);">
+              {{ a.submitted_at.strftime('%b %d, %Y %H:%M') if a.submitted_at else '' }}
+            </td>
+            <td style="padding: 14px 12px; text-align: right;">
+              <a href="{{ url_for('learning_routes.quiz_attempt_results', attempt_id=a.id) }}" class="btn btn-outline btn-sm">
+                View Breakdown &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <div class="empty-state-icon">⚡</div>
+      <div class="empty-state-title">No Quiz Attempts Yet</div>
+      <p class="empty-state-desc">Generate a quiz from a video or topic to test your knowledge.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

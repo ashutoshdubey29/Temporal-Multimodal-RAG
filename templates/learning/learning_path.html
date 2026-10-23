@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}My Learning Path{% endblock %}
+{% block page_title %}Personalized Learning Path{% endblock %}
+
+{% block extra_css %}
+<style>
+  .milestone-card { padding: 24px; border-left: 4px solid var(--border-color); }
+  .milestone-card.status-completed { border-left-color: var(--accent-emerald); }
+  .milestone-card.status-in_progress { border-left-color: var(--primary); }
+  .milestone-card.status-needs_review { border-left-color: var(--accent-rose); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 20px auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Learning Path Hero Header -->
+  <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(59, 130, 246, 0.08) 100%); border-color: rgba(99, 102, 241, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="badge badge-primary">Adaptive Roadmap</span>
+          <span class="badge badge-secondary">{{ path.starting_skill_level.capitalize() }} &rarr; {{ path.target_skill_level.capitalize() }}</span>
+        </div>
+        <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">{{ path.title }}</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+          Primary Goal: <strong style="color: var(--text-main);">{{ path.goal }}</strong>
+        </p>
+      </div>
+
+      <div style="text-align: right;">
+        <div style="font-size: 2.2rem; font-weight: 900; color: var(--accent-blue); line-height: 1;">
+          {{ path.overall_progress }}%
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Completed</div>
+      </div>
+    </div>
+
+    <!-- Overall Progress bar -->
+    <div class="progress-bar-container" style="height: 10px; margin: 20px 0 10px 0;">
+      <div class="progress-bar-fill" id="overallProgressBar" data-progress="{{ path.overall_progress }}"></div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var el = document.getElementById('overallProgressBar');
+      if (el) el.style.width = (el.getAttribute('data-progress') || 0) + '%';
+    })();
+  </script>
+
+  <!-- Study-Time Planner Widget -->
+  {% if schedule %}
+  <div class="card" style="border-left: 4px solid var(--accent-emerald);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span class="badge badge-success">Study-Time Planner</span>
+          <span style="font-size: 0.85rem; font-weight: 600;">{{ schedule.daily_study_minutes }} mins / day ({{ schedule.weekly_study_hours }}h / week)</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          {{ schedule.pacing_note }}
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 20px; text-align: center;">
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">~{{ schedule.estimated_weeks_remaining }}</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Weeks Left</div>
+        </div>
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">{{ schedule.remaining_estimated_hours }}h</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Work Hours</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Ordered Milestones Timeline -->
+  <div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+        <span>🗺️</span> Milestones & Learning Units
+      </h3>
+      
+      <form method="POST" action="{{ url_for('learning_routes.reset_learning_path') }}" onsubmit="return confirm('Regenerate your learning roadmap to match your updated profile?');">
+        <button type="submit" class="btn btn-outline btn-sm">
+          Reset / Refresh Path ↻
+        </button>
+      </form>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for m in path.milestones %}
+      <div class="card milestone-card status-{{ m.status }}">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--text-dim);">
+                #{{ '%02d' % (loop.index) }}
+              </span>
+              <span class="badge 
+                {% if m.status == 'completed' %}badge-success
+                {% elif m.status == 'in_progress' %}badge-primary
+                {% elif m.status == 'needs_review' %}badge-danger
+                {% else %}badge-secondary{% endif %}">
+                {% if m.status == 'completed' %}Completed ✓
+                {% elif m.status == 'in_progress' %}In Progress ⚡
+                {% elif m.status == 'needs_review' %}Needs Review ⚠️
+                {% else %}Not Started{% endif %}
+              </span>
+              <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ m.target_skill }}</span>
+            </div>
+
+            <h4 style="font-size: 1.15rem; font-weight: 700; line-height: 1.3;">{{ m.title }}</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45;">
+              {{ m.description }}
+            </p>
+          </div>
+
+          <div style="text-align: right; min-width: 100px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-dim);">
+              ~{{ m.estimated_hours }}h
+            </div>
+            {% if m.completed_at %}
+            <div style="font-size: 0.7rem; color: var(--accent-emerald); margin-top: 2px;">
+              Finished {{ m.completed_at.strftime('%b %d') }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Linked Course & Quiz Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 12px; align-items: center;">
+            {% if m.related_course %}
+            <a href="{{ m.related_course.course_url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; color: var(--accent-blue); text-decoration: none; font-weight: 600;">
+              📖 Course: {{ m.related_course.title[:35] }}... ↗
+            </a>
+            {% endif %}
+
+            <a href="{{ url_for('learning_routes.quiz_generator', topic=m.target_skill) }}" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600;">
+              ⚡ Quiz on {{ m.target_skill }}
+            </a>
+          </div>
+
+          <!-- Status toggle buttons -->
+          <div style="display: flex; gap: 8px;">
+            {% if m.status != 'completed' %}
+            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+              <input type="hidden" name="status" value="in_progress">
+              <button type="submit" class="btn btn-outline btn-sm">Set Active</button>
+            </form>
+            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+              <input type="hidden" name="status" value="completed">
+              <button type="submit" class="btn btn-primary btn-sm">Mark Complete ✓</button>
+            </form>
+            {% else %}
+            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+              <input type="hidden" name="status" value="in_progress">
+              <button type="submit" class="btn btn-outline btn-sm" style="color: var(--text-dim);">Re-open</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

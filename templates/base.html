@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Learning Platform{% endblock %} - Temporal Multimodal RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-surface: #1f2937;
+      --bg-surface-hover: #283548;
+      --bg-glass: rgba(17, 24, 39, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #6366f1;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #8b5cf6;
+      --sidebar-width: 260px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout */
+    .app-sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100;
+      transition: var(--transition);
+    }
+
+    .sidebar-brand {
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 20px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      font-weight: 700;
+      padding: 12px 12px 6px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .nav-link:hover {
+      background-color: var(--bg-surface);
+      color: var(--text-main);
+      transform: translateX(2px);
+    }
+
+    .nav-link.active {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      font-weight: 600;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .nav-icon {
+      font-size: 1.15rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: rgba(11, 15, 25, 0.5);
+    }
+
+    .user-profile-widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: var(--transition);
+    }
+
+    .user-profile-widget:hover {
+      background-color: var(--bg-surface);
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Main Content Area */
+    .app-main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background-color: var(--bg-primary);
+    }
+
+    .app-topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+
+    .topbar-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-content {
+      flex: 1;
+      padding: 32px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Cards & Components */
+    .card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+      line-height: 1;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--bg-surface-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .btn-outline:hover {
+      background-color: var(--bg-surface);
+      border-color: var(--text-dim);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-lg {
+      padding: 14px 24px;
+      font-size: 1rem;
+    }
+
+    .btn-danger {
+      background-color: rgba(244, 63, 94, 0.15);
+      color: var(--accent-rose);
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--accent-rose);
+      color: #fff;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .badge-primary { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .badge-danger { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+    .badge-secondary { background: var(--bg-surface); color: var(--text-muted); }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .form-helper {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-success {
+      background-color: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .alert-danger {
+      background-color: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fb7185;
+    }
+
+    .alert-info {
+      background-color: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background-color: var(--bg-surface);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: var(--radius-full);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+
+    .empty-state-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-desc {
+      font-size: 0.875rem;
+      max-width: 440px;
+      margin: 0 auto 20px;
+      color: var(--text-dim);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app-sidebar {
+        transform: translateX(-100%);
+      }
+      .app-sidebar.open {
+        transform: translateX(0);
+      }
+      .app-main {
+        margin-left: 0;
+      }
+      .app-content {
+        padding: 20px 16px;
+      }
+      .menu-toggle {
+        display: block !important;
+      }
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">&#x1D49F;</div>
+      <div>
+        <div class="brand-title">AetherLearn AI</div>
+        <div class="brand-subtitle">Multimodal Learning OS</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Core Learning</div>
+      <a href="{{ url_for('learning_routes.dashboard') }}" class="nav-link {% if request.endpoint == 'learning_routes.dashboard' %}active{% endif %}">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint == 'home' %}active{% endif %}">
+        <span class="nav-icon">🎥</span> Learn with Video
+      </a>
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="nav-link {% if 'quiz' in request.endpoint and request.endpoint != 'learning_routes.dashboard' %}active{% endif %}">
+        <span class="nav-icon">⚡</span> AI Quiz Generator
+      </a>
+
+      <div class="nav-label">Personalization</div>
+      <a href="{{ url_for('learning_routes.learning_path_view') }}" class="nav-link {% if request.endpoint == 'learning_routes.learning_path_view' %}active{% endif %}">
+        <span class="nav-icon">🗺️</span> My Learning Path
+      </a>
+      <a href="{{ url_for('learning_routes.skills_overview') }}" class="nav-link {% if request.endpoint == 'learning_routes.skills_overview' %}active{% endif %}">
+        <span class="nav-icon">🎯</span> My Skills
+      </a>
+      <a href="{{ url_for('learning_routes.courses_view') }}" class="nav-link {% if request.endpoint == 'learning_routes.courses_view' %}active{% endif %}">
+        <span class="nav-icon">📚</span> My Courses
+      </a>
+      <a href="{{ url_for('learning_routes.learning_history') }}" class="nav-link {% if request.endpoint == 'learning_routes.learning_history' %}active{% endif %}">
+        <span class="nav-icon">⏱️</span> Learning History
+      </a>
+
+      <div class="nav-label">Account</div>
+      <a href="{{ url_for('auth_routes.profile') }}" class="nav-link {% if request.endpoint == 'auth_routes.profile' %}active{% endif %}">
+        <span class="nav-icon">⚙️</span> Profile & Settings
+      </a>
+      {% if session.get('user_id') %}
+      <a href="{{ url_for('auth_routes.logout') }}" class="nav-link" style="color: var(--accent-rose);">
+        <span class="nav-icon">🚪</span> Logout
+      </a>
+      {% else %}
+      <a href="{{ url_for('auth_routes.login') }}" class="nav-link">
+        <span class="nav-icon">🔑</span> Login / Register
+      </a>
+      {% endif %}
+    </nav>
+
+    {% if session.get('user_id') and current_user %}
+    <div class="sidebar-footer">
+      <a href="{{ url_for('auth_routes.profile') }}" class="user-profile-widget">
+        <div class="avatar">{{ current_user.full_name[:1].upper() }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ current_user.full_name }}</div>
+          <div class="user-email">{{ current_user.email }}</div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- Main Container -->
+  <div class="app-main">
+    <header class="app-topbar">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">&#9776;</button>
+        <h1 class="topbar-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="topbar-actions">
+        {% block topbar_actions %}
+          {% if session.get('user_id') %}
+            <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">
+              <span>⚡</span> Generate Quiz
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth_routes.login') }}" class="btn btn-secondary btn-sm">Log In</a>
+            <a href="{{ url_for('auth_routes.register') }}" class="btn btn-primary btn-sm">Sign Up</a>
+          {% endif %}
+        {% endblock %}
+      </div>
+    </header>
+
+    <main class="app-content">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+              <span>ℹ️</span> {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('appSidebar');
+    if (menuToggle && sidebar) {
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 900 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+          sidebar.classList.remove('open');
+        }
+      });
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Learning Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Hero Welcome Banner -->
+  <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(17, 24, 39, 0.9) 100%); border-color: rgba(99, 102, 241, 0.3);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="badge badge-primary">AI Learning OS</span>
+          {% if streak > 0 %}
+          <span class="badge badge-warning">🔥 {{ streak }} Day Streak</span>
+          {% endif %}
+        </div>
+        <h2 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">
+          Welcome back, {{ user.full_name }}! 👋
+        </h2>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 4px;">
+          Target Goal: <strong style="color: var(--text-main);">{{ profile.primary_goal }}</strong> &bull; Focus: <strong style="color: var(--primary);">{{ profile.target_skill }}</strong>
+        </p>
+      </div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">
+          <span>🎥</span> Learn with Video
+        </a>
+        <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary">
+          <span>⚡</span> Generate AI Quiz
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Progress & Diagnostic KPI Metrics -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <!-- Overall Path Progress -->
+    <div class="card">
+      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
+        Learning Path Progress
+      </div>
+      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-blue); margin: 6px 0;">
+        {{ learning_path.overall_progress }}%
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" style="width: {{ learning_path.overall_progress }}%;"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+        {{ learning_path.title }}
+      </div>
+    </div>
+
+    <!-- Quizzes Completed -->
+    <div class="card">
+      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
+        Quizzes Completed
+      </div>
+      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-emerald); margin: 6px 0;">
+        {{ quizzes_completed }}
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">
+        {% if quizzes_completed > 0 %}
+        Authoritatively assessed by AI tutor
+        {% else %}
+        No quizzes completed yet
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Average Score -->
+    <div class="card">
+      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
+        Average Accuracy
+      </div>
+      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-purple); margin: 6px 0;">
+        {% if quizzes_completed > 0 %}{{ avg_score }}%{% else %}&mdash;{% endif %}
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">
+        {% if avg_score >= 80 %}Mastery tier (>80% avg){% elif avg_score >= 60 %}Intermediate tier{% elif quizzes_completed > 0 %}Foundational practice tier{% else %}Take your first quiz to calibrate{% endif %}
+      </div>
+    </div>
+
+    <!-- Learning Streak -->
+    <div class="card">
+      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
+        Activity Streak
+      </div>
+      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-amber); margin: 6px 0;">
+        {{ streak }} {% if streak == 1 %}Day{% else %}Days{% endif %}
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">
+        {% if streak > 0 %}Consistently active{% else %}Complete an activity today to start a streak!{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommended Next Action & Learning Milestone Banner -->
+  {% if recommended_activity %}
+  <div class="card" style="border-left: 4px solid var(--primary); background: rgba(31, 41, 55, 0.6);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span class="badge badge-primary" style="margin-bottom: 6px;">Recommended Next Action</span>
+        <h3 style="font-size: 1.15rem; font-weight: 700;">{{ recommended_activity.title }}</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">{{ recommended_activity.description }}</p>
+      </div>
+      <a href="{{ recommended_activity.action_url }}" class="btn btn-primary">
+        {{ recommended_activity.action_label }} &rarr;
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Two-Column Grid: Skills Diagnostics vs Upcoming Milestones -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+
+    <!-- Skill Diagnostic Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title"><span>🎯</span> Skill Diagnostics</h3>
+          <p class="card-subtitle">Empirical proficiency derived from your quiz responses</p>
+        </div>
+        <a href="{{ url_for('learning_routes.skills_overview') }}" class="btn btn-outline btn-sm">View All</a>
+      </div>
+
+      {% if strong_skills or weak_skills %}
+        {% if strong_skills %}
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 8px;">
+            Strongest Skills
+          </div>
+          {% for s in strong_skills %}
+          <div style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+              <span>{{ s.skill_name }}</span>
+              <span style="color: var(--accent-emerald);">{{ s.estimated_proficiency }}%</span>
+            </div>
+            <div class="progress-bar-container" style="height: 6px; margin: 0;">
+              <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-emerald);"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if weak_skills %}
+        <div>
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-rose); text-transform: uppercase; margin-bottom: 8px;">
+            Needs Improvement
+          </div>
+          {% for s in weak_skills %}
+          <div style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+              <span>{{ s.skill_name }}</span>
+              <span style="color: var(--accent-rose);">{{ s.estimated_proficiency }}%</span>
+            </div>
+            <div class="progress-bar-container" style="height: 6px; margin: 0;">
+              <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-rose);"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No Skill Evidence Yet</div>
+          <p class="empty-state-desc">Take your first quiz from a video or topic to diagnose your proficiency.</p>
+          <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Take Assessment</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Upcoming Milestones Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title"><span>🗺️</span> Upcoming Milestones</h3>
+          <p class="card-subtitle">Next steps in your adaptive learning path</p>
+        </div>
+        <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-outline btn-sm">Full Path</a>
+      </div>
+
+      {% if upcoming_milestones %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for m in upcoming_milestones %}
+          <div style="background-color: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border-left: 3px solid {% if m.status == 'in_progress' %}var(--primary){% elif m.status == 'needs_review' %}var(--accent-rose){% else %}var(--text-dim){% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 0.9rem;">{{ m.title }}</span>
+              <span class="badge {% if m.status == 'in_progress' %}badge-primary{% elif m.status == 'needs_review' %}badge-danger{% else %}badge-secondary{% endif %}">
+                {{ m.status.replace('_', ' ').capitalize() }}
+              </span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">{{ m.description }}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.75rem; color: var(--text-dim);">
+              <span>Est: {{ m.estimated_hours }}h</span>
+              <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+                <input type="hidden" name="status" value="completed">
+                <button type="submit" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.7rem;">Mark Complete</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🏆</div>
+          <div class="empty-state-title">All Milestones Completed!</div>
+          <p class="empty-state-desc">Congratulations on completing your path. You can refresh or add new milestones.</p>
+          <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-primary btn-sm">Manage Path</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recommended Courses Grid -->
+  <div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Recommended for You</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Explainable recommendations based on your goal, skill gaps, and study pace</p>
+      </div>
+      <a href="{{ url_for('learning_routes.courses_view') }}" class="btn btn-outline btn-sm">Browse Catalogue</a>
+    </div>
+
+    {% if course_recs %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      {% for item in course_recs %}
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <span class="badge badge-primary">{{ item.course.difficulty.capitalize() }}</span>
+            <span class="badge badge-success">{{ item.relevance_percent }}% Match</span>
+          </div>
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">{{ item.course.title }}</h4>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px;">Provided by {{ item.course.provider }} &bull; ~{{ item.course.duration_hours }}h</div>
+          <p style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
+            {{ item.course.description[:130] }}...
+          </p>
+
+          <div style="background-color: rgba(99, 102, 241, 0.08); border-left: 2px solid var(--primary); padding: 8px 10px; border-radius: 4px; font-size: 0.75rem; color: #a5b4fc; margin-bottom: 16px;">
+            <strong>Why:</strong> {{ item.primary_reason }}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
+          <a href="{{ item.course.course_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+            Visit Course ↗
+          </a>
+          <form method="POST" action="{{ url_for('learning_routes.update_course_status', course_id=item.course.id) }}">
+            <input type="hidden" name="status" value="enrolled">
+            <button type="submit" class="btn btn-primary btn-sm">
+              {% if item.is_enrolled %}Enrolled ✓{% else %}Save Course{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty-state">
+      <div class="empty-state-icon">📚</div>
+      <div class="empty-state-title">No Recommendations Available</div>
+      <p class="empty-state-desc">Update your profile goals to receive personalized course suggestions.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Video Learning & Quiz Activity -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+    <!-- Recent Video Sessions -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title"><span>🎥</span> Recent Video Sessions</h3>
+          <p class="card-subtitle">Lectures and videos you studied</p>
+        </div>
+        <a href="{{ url_for('home') }}" class="btn btn-outline btn-sm">New Video</a>
+      </div>
+
+      {% if recent_videos %}
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% for v in recent_videos %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: var(--bg-surface); border-radius: var(--radius-sm);">
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ v.title }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">{{ v.transcript_source }} &bull; {{ v.created_at.strftime('%b %d, %Y') if v.created_at else '' }}</div>
+          </div>
+          <a href="{{ url_for('learning_routes.quiz_generator', video_session_id=v.id) }}" class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;">
+            Quiz
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding: 24px 12px;">
+        <div class="empty-state-icon" style="font-size: 1.8rem;">🎬</div>
+        <div class="empty-state-title" style="font-size: 1rem;">No Video Sessions Yet</div>
+        <p class="empty-state-desc" style="font-size: 0.8rem; margin-bottom: 12px;">Transcribe a lecture or YouTube video to begin.</p>
+        <a href="{{ url_for('home') }}" class="btn btn-primary btn-sm">Upload Video</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Quiz Attempts -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title"><span>📝</span> Recent Quiz Attempts</h3>
+          <p class="card-subtitle">Your latest quiz results and scores</p>
+        </div>
+        <a href="{{ url_for('learning_routes.learning_history') }}" class="btn btn-outline btn-sm">All Attempts</a>
+      </div>
+
+      {% if recent_attempts %}
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% for a in recent_attempts %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: var(--bg-surface); border-radius: var(--radius-sm);">
+          <div>
+            <div style="font-weight: 600; font-size: 0.85rem;">{{ a.quiz.title if a.quiz else 'Assessment' }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">
+              {{ a.submitted_at.strftime('%b %d, %Y') if a.submitted_at else '' }} &bull; {{ a.correct_count }}/{{ a.total_questions }} correct
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="badge {% if a.percentage >= 80 %}badge-success{% elif a.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}">
+              {{ a.percentage }}%
+            </span>
+            <a href="{{ url_for('learning_routes.quiz_attempt_results', attempt_id=a.id) }}" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;">
+              Review
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding: 24px 12px;">
+        <div class="empty-state-icon" style="font-size: 1.8rem;">⚡</div>
+        <div class="empty-state-title" style="font-size: 1rem;">No Quizzes Attempted</div>
+        <p class="empty-state-desc" style="font-size: 0.8rem; margin-bottom: 12px;">Generate an MCQ quiz to evaluate your retention.</p>
+        <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Create Quiz</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

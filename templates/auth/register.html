@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account{% endblock %}
+{% block page_title %}Student Registration{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 30px auto;">
+  <div class="card" style="padding: 36px 32px; border-color: rgba(99, 102, 241, 0.2); box-shadow: var(--shadow-lg);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div class="avatar" style="width: 52px; height: 52px; margin: 0 auto 16px; font-size: 1.5rem;">🚀</div>
+      <h2 style="font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;">Start Your AI Learning Journey</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+        Register to get personalized video quiz generation, skill diagnostics, and an adaptive learning roadmap.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger" style="margin-bottom: 20px;">
+      <span>⚠️</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth_routes.register') }}" id="registerForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="form-group">
+        <label class="form-label" for="full_name">Full Name</label>
+        <input type="text" id="full_name" name="full_name" class="form-input" placeholder="e.g. Alex Chen" value="{{ full_name or '' }}" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-input" placeholder="alex@university.edu" value="{{ email or '' }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-input" placeholder="At least 8 characters with letters & numbers" required minlength="8">
+        <div class="form-helper">Must be 8+ characters and contain both letters and digits.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="Re-type your password" required minlength="8">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+        Create Account & Begin Onboarding
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted);">
+      Already have an account? 
+      <a href="{{ url_for('auth_routes.login') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+        Log In
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

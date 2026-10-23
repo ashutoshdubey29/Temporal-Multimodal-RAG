@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Taking Quiz: {{ quiz.title }}{% endblock %}
+{% block page_title %}{{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .question-container {
+    display: none;
+  }
+  .question-container.active {
+    display: block;
+    animation: fadeIn 0.25s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .option-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background-color: var(--bg-surface);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+    margin-bottom: 12px;
+  }
+  .option-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background-color: var(--bg-surface-hover);
+  }
+  .option-card.selected {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.12);
+  }
+  .option-letter {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background-color: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    transition: var(--transition);
+  }
+  .option-card.selected .option-letter {
+    background-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  }
+  .nav-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    transition: var(--transition);
+  }
+  .nav-pill:hover {
+    border-color: var(--primary);
+    color: var(--text-main);
+  }
+  .nav-pill.active {
+    border-color: var(--primary);
+    background-color: rgba(99, 102, 241, 0.2);
+    color: var(--primary);
+  }
+  .nav-pill.answered {
+    background-color: var(--accent-emerald);
+    color: #fff;
+    border-color: var(--accent-emerald);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 20px auto;">
+
+  <!-- Header Tracker -->
+  <div class="card" style="margin-bottom: 24px; padding: 18px 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div>
+        <span class="badge badge-primary">{{ quiz.difficulty.capitalize() }}</span>
+        <span class="badge badge-secondary" style="margin-left: 6px;">{{ quiz.source_type.capitalize() }} Source</span>
+        <span id="questionCounter" style="margin-left: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+          Question 1 of {{ questions|length }}
+        </span>
+      </div>
+      <div id="progressText" style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">0% Answered</div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-container" style="height: 6px; margin: 0 0 16px 0;">
+      <div class="progress-bar-fill" id="quizProgressBar" style="width: 0%;"></div>
+    </div>
+
+    <!-- Question Navigator Pills -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="pillsContainer">
+      {% for q in questions %}
+      <div class="nav-pill {% if loop.first %}active{% endif %}" id="pill_{{ loop.index0 }}" onclick="goToQuestion({{ loop.index0 }})">
+        {{ loop.index }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Form for submission -->
+  <form id="quizForm" method="POST" action="{{ url_for('learning_routes.submit_quiz', quiz_id=quiz.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% for q in questions %}
+    <div class="card question-container {% if loop.first %}active{% endif %}" id="questionCard_{{ loop.index0 }}" style="padding: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <span class="badge badge-primary">Topic: {{ q.topic }}</span>
+        {% if q.source_start is not none %}
+        <span style="font-size: 0.75rem; color: var(--text-dim);">
+          ⏱️ Video source: {{ '%02d:%02d' % (q.source_start // 60, q.source_start % 60) }}
+        </span>
+        {% endif %}
+      </div>
+
+      <h3 style="font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-bottom: 24px;">
+        {{ loop.index }}. {{ q.question }}
+      </h3>
+
+      <div class="options-group">
+        {% for letter in ['A', 'B', 'C', 'D'] %}
+        {% set opt_text = q.options.get(letter, '') %}
+        <div class="option-card" id="optCard_{{ q.id }}_{{ letter }}" onclick="selectOption('{{ q.id }}', '{{ letter }}', {{ loop.parent.loop.index0 }})">
+          <input type="radio" name="q_{{ q.id }}" id="radio_{{ q.id }}_{{ letter }}" value="{{ letter }}" style="display: none;">
+          <div class="option-letter">{{ letter }}</div>
+          <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-main); flex: 1;">
+            {{ opt_text }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Navigation Controls -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+      <button type="button" class="btn btn-secondary btn-lg" id="prevBtn" onclick="prevQuestion()" disabled>
+        &larr; Previous
+      </button>
+
+      <div style="display: flex; gap: 12px;">
+        <button type="button" class="btn btn-outline btn-lg" id="nextBtn" onclick="nextQuestion()">
+          Next Question &rarr;
+        </button>
+
+        <button type="button" class="btn btn-primary btn-lg" id="submitConfirmBtn" onclick="confirmSubmit()">
+          Submit Quiz ✓
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const totalQuestions = {{ questions|length }};
+  let currentIndex = 0;
+  const answeredSet = new Set();
+
+  function updateView() {
+    // Hide all question cards
+    for (let i = 0; i < totalQuestions; i++) {
+      const card = document.getElementById(`questionCard_${i}`);
+      const pill = document.getElementById(`pill_${i}`);
+      if (card) card.classList.toggle('active', i === currentIndex);
+      if (pill) {
+        pill.classList.toggle('active', i === currentIndex);
+        pill.classList.toggle('answered', answeredSet.has(i));
+      }
+    }
+
+    // Update Counter & Progress
+    document.getElementById('questionCounter').textContent = `Question ${currentIndex + 1} of ${totalQuestions}`;
+    const pct = Math.round((answeredSet.size / totalQuestions) * 100);
+    document.getElementById('quizProgressBar').style.width = `${pct}%`;
+    document.getElementById('progressText').textContent = `${pct}% Answered (${answeredSet.size}/${totalQuestions})`;
+
+    // Prev / Next button state
+    document.getElementById('prevBtn').disabled = (currentIndex === 0);
+    const nextBtn = document.getElementById('nextBtn');
+    if (currentIndex === totalQuestions - 1) {
+      nextBtn.style.display = 'none';
+    } else {
+      nextBtn.style.display = 'inline-flex';
+    }
+  }
+
+  function selectOption(questionId, letter, qIndex) {
+    // Unselect other option cards for this question
+    ['A', 'B', 'C', 'D'].forEach(l => {
+      const card = document.getElementById(`optCard_${questionId}_${l}`);
+      if (card) card.classList.remove('selected');
+    });
+
+    // Select chosen card
+    const targetCard = document.getElementById(`optCard_${questionId}_${letter}`);
+    const targetRadio = document.getElementById(`radio_${questionId}_${letter}`);
+    if (targetCard && targetRadio) {
+      targetCard.classList.add('selected');
+      targetRadio.checked = true;
+      answeredSet.add(qIndex);
+      updateView();
+    }
+  }
+
+  function goToQuestion(idx) {
+    if (idx >= 0 && idx < totalQuestions) {
+      currentIndex = idx;
+      updateView();
+    }
+  }
+
+  function nextQuestion() {
+    if (currentIndex < totalQuestions - 1) {
+      currentIndex++;
+      updateView();
+    }
+  }
+
+  function prevQuestion() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateView();
+    }
+  }
+
+  function confirmSubmit() {
+    const unanswered = totalQuestions - answeredSet.size;
+    let msg = `Ready to submit your quiz?`;
+    if (unanswered > 0) {
+      msg = `You have ${unanswered} unanswered question(s). Are you sure you want to submit now?`;
+    }
+    if (confirm(msg)) {
+      document.getElementById('quizForm').submit();
+    }
+  }
+</script>
+{% endblock %}

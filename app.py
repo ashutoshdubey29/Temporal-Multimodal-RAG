@@ -1,36 +1,141 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
 
-from processing.transcription import transcribe_video
-from rag.qa import find_relevant_segments
+from processing.transcription import transcribe_video, ensure_ffmpeg
+from processing.youtube_processor import process_youtube_video, extract_youtube_video_id
+from rag.qa import answer_question, find_relevant_segments
+from rag.llm import get_llm_config
 
 import os
+import secrets
+import socket
+import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s"
+)
+logger = logging.getLogger("app")
+
+ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".mp3", ".wav", ".m4a"}
 
 app = Flask(__name__)
+# Use deterministic development secret or secure environment secret
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "temporal-rag-session-secret-key-2026"
 
 # =====================================
 # PATH SETTINGS
 # =====================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-UPLOAD_FOLDER = os.path.join(
-    BASE_DIR,
-    "uploads"
-)
-
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # =====================================
-# TEMPORARY SERVER MEMORY
+# DATABASE & BLUEPRINT CONFIGURATION
 # =====================================
 
+db_path = os.path.join(BASE_DIR, "learning_platform.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or f"sqlite:///{db_path}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+from models.database import init_db, db, VideoLearningSession
+init_db(app)
+
+from routes.auth_routes import auth_bp
+from routes.learning_routes import learning_bp
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(learning_bp)
+
+@app.context_processor
+def inject_globals():
+    from auth.auth_manager import get_current_user
+    return {
+        "current_user": get_current_user()
+    }
+
+
+# =====================================
+# MULTI-VIDEO IN-MEMORY STATE STORE
+# =====================================
+# Maps source_id (e.g., 'yt_dQw4w9WgXcQ' or 'local_lecture.mp4') to its video metadata & transcript segments
+VIDEO_STORE = {}
+
+# Legacy global fallback for backward compatibility
 current_segments = []
 current_filename = None
+
+
+def get_active_video(source_id=None):
+    """
+    Retrieves video data by explicit source_id, session active ID, or latest stored video.
+    Checks authenticated user's database records first for multi-user data isolation.
+    """
+    target_id = source_id or session.get("current_video_id")
+    user_id = session.get("user_id")
+
+    if user_id:
+        try:
+            query = VideoLearningSession.query.filter_by(user_id=user_id)
+            if target_id:
+                record = query.filter_by(source_id=target_id).first()
+            else:
+                record = query.order_by(VideoLearningSession.created_at.desc()).first()
+
+            if record:
+                yt_id = record.source_id.replace("yt_", "") if record.video_type == "youtube" else None
+                return {
+                    "id": record.source_id,
+                    "db_id": record.id,
+                    "type": record.video_type,
+                    "video_id": yt_id,
+                    "title": record.title,
+                    "filename": record.title,
+                    "video_url": record.video_url,
+                    "thumbnail": record.thumbnail,
+                    "duration": record.duration,
+                    "transcript_source": record.transcript_source,
+                    "segments": record.get_segments()
+                }
+        except Exception as e:
+            logger.warning("Error querying VideoLearningSession: %s", e)
+
+    if target_id and target_id in VIDEO_STORE:
+        return VIDEO_STORE[target_id]
+    if VIDEO_STORE:
+        # Return most recently added video if available
+        return next(reversed(VIDEO_STORE.values()))
+    return None
+
+
+# =====================================
+# HEALTH CHECK ENDPOINT
+# =====================================
+
+@app.route("/health", methods=["GET"])
+def health():
+    """
+    Lightweight health check endpoint.
+    Returns JSON status, video count, and dynamic FFmpeg status.
+    Does NOT reload the Whisper model on each check.
+    """
+    ffmpeg_ok, ffmpeg_info = ensure_ffmpeg()
+    llm_conf = get_llm_config()
+    return jsonify({
+        "status": "healthy",
+        "healthy": True,
+        "ready": True,
+        "app": "Temporal-Multimodal-RAG",
+        "ffmpeg_available": ffmpeg_ok,
+        "ffmpeg_path": ffmpeg_info if ffmpeg_ok else None,
+        "active_videos": len(VIDEO_STORE),
+        "model_status": "ready",
+        "llm_configured": llm_conf.get("is_configured", False),
+        "llm_provider": llm_conf.get("provider", "none")
+    }), 200
 
 
 # =====================================
@@ -39,134 +144,335 @@ current_filename = None
 
 @app.route("/")
 def home():
+    active_video = get_active_video()
+    if active_video:
+        yt_id = active_video.get("video_id")
+        embed_url = active_video.get("embed_url") or (f"https://www.youtube.com/embed/{yt_id}" if yt_id else None)
+        return render_template(
+            "index.html",
+            video_type=active_video.get("type", "local"),
+            source_id=active_video.get("id"),
+            filename=active_video.get("filename") or active_video.get("title"),
+            video_title=active_video.get("title"),
+            video_url=active_video.get("video_url") or active_video.get("url"),
+            youtube_id=yt_id,
+            youtube_embed_url=embed_url,
+            video_thumbnail=active_video.get("thumbnail"),
+            video_duration=active_video.get("duration"),
+            transcript=active_video.get("segments", [])
+        )
+
+    return render_template("index.html")
+
+
+# =====================================
+# PROCESS YOUTUBE VIDEO
+# =====================================
+
+@app.route("/process_youtube", methods=["POST"])
+def process_youtube():
+    global current_segments, current_filename
+
+    # Read URL from either form submission or JSON payload
+    youtube_url = ""
+    is_json_request = request.is_json or request.headers.get("Accept") == "application/json"
+
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        youtube_url = data.get("youtube_url", "")
+    else:
+        youtube_url = request.form.get("youtube_url", "")
+
+    youtube_url = (youtube_url or "").strip()
+
+    if not youtube_url:
+        error_msg = "Please enter a YouTube video URL."
+        if is_json_request:
+            return jsonify({"success": False, "error": error_msg}), 400
+        return render_template("index.html", error=error_msg)
+
+    # 1. Fast URL Validation
+    is_valid, video_id, val_error = extract_youtube_video_id(youtube_url)
+    if not is_valid:
+        if is_json_request:
+            return jsonify({"success": False, "error": val_error}), 400
+        return render_template("index.html", error=val_error)
+
+    print("\n================================")
+    print("PROCESSING YOUTUBE VIDEO")
+    print("================================")
+    print("URL:", youtube_url)
+    print("Video ID:", video_id)
+
+    # 2. Process video (metadata + captions/audio transcription)
+    result = process_youtube_video(youtube_url, enable_audio_fallback=True)
+
+    if not result.get("success"):
+        err = result.get("error") or "Failed to process YouTube video."
+        err_type = result.get("error_type", "processing_failed")
+        logger.warning("YouTube processing failed for %s (%s): %s", video_id, err_type, err)
+        print(f"YouTube processing error ({err_type}): {err}")
+        if is_json_request:
+            return jsonify({
+                "success": False,
+                "error": err,
+                "error_type": err_type,
+                "video_id": video_id,
+                "caption_diagnostics": result.get("caption_diagnostics"),
+                "audio_diagnostics": result.get("audio_diagnostics")
+            }), 400
+        return render_template("index.html", error=err, youtube_url=youtube_url)
+
+    # 3. Store in VIDEO_STORE with dedicated source_id
+    source_id = f"yt_{video_id}"
+    video_record = {
+        "id": source_id,
+        "type": "youtube",
+        "video_id": video_id,
+        "title": result["title"],
+        "author": result["author"],
+        "thumbnail": result["thumbnail"],
+        "duration": result["duration"],
+        "url": result["url"],
+        "embed_url": result["embed_url"],
+        "transcript_source": result["transcript_source"],
+        "segments": result["segments"]
+    }
+
+    VIDEO_STORE[source_id] = video_record
+    session["current_video_id"] = source_id
+
+    # Persist for authenticated user
+    if session.get("user_id"):
+        try:
+            import json as py_json
+            user_session = VideoLearningSession.query.filter_by(
+                user_id=session["user_id"],
+                source_id=source_id
+            ).first()
+            if not user_session:
+                user_session = VideoLearningSession(
+                    user_id=session["user_id"],
+                    source_id=source_id,
+                    video_type="youtube",
+                    title=result["title"],
+                    video_url=result["url"],
+                    thumbnail=result.get("thumbnail", ""),
+                    duration=float(result.get("duration", 0.0) or 0.0),
+                    transcript_source=result.get("transcript_source", "captions"),
+                    transcript_json=py_json.dumps(result["segments"]),
+                    processing_status="completed"
+                )
+                db.session.add(user_session)
+            else:
+                user_session.title = result["title"]
+                user_session.transcript_json = py_json.dumps(result["segments"])
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning("Could not persist YouTube session for user %s: %s", session.get("user_id"), e)
+
+    # Update global fallbacks
+    current_segments = result["segments"]
+    current_filename = result["title"]
+
+    logger.info("YouTube processing complete for %s. Source: %s, Segments: %d",
+                video_id, result["transcript_source"], len(result["segments"]))
+    print("YOUTUBE TRANSCRIPTION COMPLETE!")
+    print("Total segments:", len(result["segments"]))
+
+    if is_json_request:
+        return jsonify({
+            "success": True,
+            "source_id": source_id,
+            "video": video_record,
+            "segments_count": len(result["segments"]),
+            "transcript_source": result["transcript_source"],
+            "caption_diagnostics": result.get("caption_diagnostics"),
+            "audio_diagnostics": result.get("audio_diagnostics")
+        })
 
     return render_template(
-        "index.html"
+        "index.html",
+        video_type="youtube",
+        source_id=source_id,
+        youtube_id=video_id,
+        youtube_embed_url=result.get("embed_url") or f"https://www.youtube.com/embed/{video_id}",
+        video_title=result["title"],
+        video_thumbnail=result["thumbnail"],
+        video_url=result["url"],
+        transcript=result["segments"],
+        filename=result["title"]
     )
 
 
 # =====================================
-# UPLOAD VIDEO
+# UPLOAD LOCAL VIDEO
 # =====================================
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    global current_segments, current_filename
 
-    global current_segments
-    global current_filename
-
+    is_json_request = request.is_json or request.headers.get("Accept") == "application/json"
 
     if "video" not in request.files:
-
-        return render_template(
-            "index.html",
-            error="Please select a video."
-        )
-
+        err = "Please select a video file to upload."
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "missing_file"}), 400
+        return render_template("index.html", error=err)
 
     video = request.files["video"]
+    if not video or video.filename == "":
+        err = "Please select a video file to upload."
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "empty_filename"}), 400
+        return render_template("index.html", error=err)
 
+    filename = secure_filename(video.filename)
+    if not filename:
+        err = "Invalid filename provided."
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "invalid_filename"}), 400
+        return render_template("index.html", error=err)
 
-    if video.filename == "":
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_MEDIA_EXTENSIONS:
+        err = f"Unsupported file format '{ext}'. Supported formats: {', '.join(sorted(ALLOWED_MEDIA_EXTENSIONS))}."
+        logger.warning("Unsupported file format upload attempted: %s", filename)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "unsupported_format"}), 400
+        return render_template("index.html", error=err)
 
-        return render_template(
-            "index.html",
-            error="Please select a video."
-        )
+    video_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
 
-
-    filename = secure_filename(
-        video.filename
-    )
-
-
-    video_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        filename
-    )
-
-
-    # Save video
+    # Save video to disk
     video.save(video_path)
 
+    # Check file size
+    file_size = os.path.getsize(video_path) if os.path.exists(video_path) else 0
+    if file_size == 0:
+        err = "Uploaded file is 0 bytes (empty file)."
+        logger.warning("Empty file uploaded: %s", filename)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "empty_file"}), 400
+        return render_template("index.html", error=err)
 
+    logger.info("Local media uploaded: %s (%d bytes)", filename, file_size)
     print("\n================================")
-    print("VIDEO UPLOADED")
+    print("LOCAL VIDEO UPLOADED")
     print("================================")
-
     print("Filename:", filename)
     print("Path:", video_path)
-    print("Exists:", os.path.exists(video_path))
-
-
-    # =================================
-    # TRANSCRIPTION
-    # =================================
-
-    print("\nStarting transcription...")
+    print("Size:", file_size, "bytes")
 
     try:
-
-        segments = transcribe_video(
-            video_path
-        )
-
+        segments = transcribe_video(video_path)
+    except ValueError as ve:
+        # Pre-flight audio validation or format error
+        err = str(ve)
+        logger.warning("Audio validation failed for local video %s: %s", filename, err)
+        print("\nAUDIO VALIDATION ERROR:", err)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "no_audio_track"}), 400
+        return render_template("index.html", error=err)
+    except RuntimeError as re_err:
+        err = str(re_err)
+        logger.error("Transcription runtime error for %s: %s", filename, err)
+        print("\nTRANSCRIPTION RUNTIME ERROR:", err)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "transcription_error"}), 500
+        return render_template("index.html", error=err)
     except Exception as e:
+        logger.exception("Unexpected error transcribing %s: %s", filename, e)
+        err = f"Unexpected transcription error: {type(e).__name__} - {e}"
+        print("\nUNEXPECTED TRANSCRIPTION ERROR:", err)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "internal_error"}), 500
+        return render_template("index.html", error=err)
 
-        print("\nTRANSCRIPTION ERROR:")
-        print(e)
+    if not segments:
+        err = "No spoken words were detected in the audio track of this video."
+        logger.warning("Transcription resulted in 0 segments for %s", filename)
+        if is_json_request:
+            return jsonify({"success": False, "error": err, "error_type": "empty_transcript"}), 400
+        return render_template("index.html", error=err)
 
-        return render_template(
-            "index.html",
-            error=f"Transcription error: {e}"
-        )
+    source_id = f"local_{filename}"
+    video_record = {
+        "id": source_id,
+        "type": "local",
+        "filename": filename,
+        "title": filename,
+        "video_url": f"/uploads/{filename}",
+        "segments": segments
+    }
 
+    VIDEO_STORE[source_id] = video_record
+    session["current_video_id"] = source_id
 
-    print("\nTRANSCRIPTION COMPLETED!")
+    # Persist for authenticated user
+    if session.get("user_id"):
+        try:
+            import json as py_json
+            user_session = VideoLearningSession.query.filter_by(
+                user_id=session["user_id"],
+                source_id=source_id
+            ).first()
+            if not user_session:
+                user_session = VideoLearningSession(
+                    user_id=session["user_id"],
+                    source_id=source_id,
+                    video_type="local",
+                    title=filename,
+                    video_url=f"/uploads/{filename}",
+                    thumbnail="",
+                    duration=0.0,
+                    transcript_source="whisper",
+                    transcript_json=py_json.dumps(segments),
+                    processing_status="completed"
+                )
+                db.session.add(user_session)
+            else:
+                user_session.title = filename
+                user_session.transcript_json = py_json.dumps(segments)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning("Could not persist local upload session for user %s: %s", session.get("user_id"), e)
 
-    print("Total segments:", len(segments))
-
-
-    # =================================
-    # STORE ON SERVER
-    # =================================
-
+    # Update global fallbacks
     current_segments = segments
-
     current_filename = filename
 
+    logger.info("Local video successfully transcribed: %s (%d segments)", filename, len(segments))
 
-    # =================================
-    # SHOW RESULT
-    # =================================
+    if is_json_request:
+        return jsonify({
+            "success": True,
+            "source_id": source_id,
+            "video": video_record,
+            "segments_count": len(segments)
+        })
 
     return render_template(
-
         "index.html",
-
+        video_type="local",
+        source_id=source_id,
         video_url=f"/uploads/{filename}",
-
         filename=filename,
-
+        video_title=filename,
         transcript=segments
-
     )
 
 
 # =====================================
-# SERVE VIDEO
+# SERVE LOCAL VIDEO
 # =====================================
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
-
-    return send_from_directory(
-
-        app.config["UPLOAD_FOLDER"],
-
-        filename
-
-    )
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
 # =====================================
@@ -175,155 +481,201 @@ def uploaded_file(filename):
 
 @app.route("/ask", methods=["POST"])
 def ask():
+    is_json_request = request.is_json or request.headers.get("Accept") == "application/json"
 
-    global current_segments
-    global current_filename
-
-
-    question = request.form.get(
-        "question",
-        ""
-    ).strip()
-
+    # Support JSON and form submissions
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        question = (data.get("question") or "").strip()
+        source_id = data.get("source_id")
+    else:
+        question = (request.form.get("question") or "").strip()
+        source_id = request.form.get("source_id")
 
     if not question:
+        err = "Please enter a question."
+        if is_json_request:
+            return jsonify({"success": False, "error": err}), 400
+        return render_template("index.html", error=err)
 
+    # Resolve active video
+    active_video = get_active_video(source_id)
+    segments = active_video.get("segments", []) if active_video else current_segments
+
+    if not segments:
+        err = "Please upload or analyze a video first."
+        if is_json_request:
+            return jsonify({"success": False, "error": err}), 400
         return render_template(
             "index.html",
-            error="Please enter a question."
-        )
-
-
-    # =================================
-    # CHECK TRANSCRIPT
-    # =================================
-
-    if not current_segments:
-
-        return render_template(
-
-            "index.html",
-
             question=question,
-
-            answer="Please upload and analyze a video first.",
-
+            answer=err,
+            sources=[],
+            timestamps=[],
+            answer_mode="error",
             timestamp="Not available"
-
         )
 
-
     print("\n================================")
-    print("USER QUESTION")
+    print("USER QUESTION:", question)
+    print("Target Video Source:", active_video.get("id") if active_video else "global")
     print("================================")
 
-    print(question)
+    # Execute full RAG QA pipeline
+    rag_response = answer_question(question, segments)
 
+    answer_text = rag_response.get("answer", "")
+    sources = rag_response.get("sources", [])
+    timestamps = rag_response.get("timestamps", [])
+    answer_mode = rag_response.get("answer_mode", "llm")
+    timestamp_str = rag_response.get("timestamp_str", "Not found")
+    primary_ts = rag_response.get("primary_timestamp")
+    results = rag_response.get("results", [])
 
-    # =================================
-    # RAG RETRIEVAL
-    # =================================
-
-    results = find_relevant_segments(
-
-        question,
-
-        current_segments
-
-    )
-
-
-    # =================================
-    # NO MATCH
-    # =================================
-
-    if not results:
-
+    if not sources or answer_mode == "no_match":
+        if is_json_request:
+            return jsonify({
+                "success": True,
+                "question": question,
+                "answer": answer_text,
+                "sources": [],
+                "timestamps": [],
+                "answer_mode": "no_match",
+                "timestamp": "Not found",
+                "start": None,
+                "end": None,
+                "results": []
+            })
         return render_template(
-
             "index.html",
-
             question=question,
-
-            answer="No relevant information was found in the video transcript.",
-
+            answer=answer_text,
+            sources=[],
+            timestamps=[],
+            answer_mode="no_match",
             timestamp="Not found",
-
-            transcript=current_segments,
-
-            filename=current_filename,
-
-            video_url=f"/uploads/{current_filename}"
-
+            transcript=segments,
+            video_type=active_video.get("type", "local") if active_video else "local",
+            source_id=active_video.get("id") if active_video else None,
+            filename=active_video.get("filename") or active_video.get("title") if active_video else current_filename,
+            video_title=active_video.get("title") if active_video else current_filename,
+            video_url=active_video.get("video_url") or active_video.get("url") if active_video else None,
+            youtube_id=active_video.get("video_id") if active_video else None,
+            video_thumbnail=active_video.get("thumbnail") if active_video else None
         )
 
+    start_sec = primary_ts["start"] if primary_ts else sources[0]["start"]
+    end_sec = primary_ts["end"] if primary_ts else sources[0]["end"]
 
-    # =================================
-    # BEST RESULT
-    # =================================
+    youtube_url_with_timestamp = None
+    if active_video and active_video.get("type") == "youtube" and start_sec is not None:
+        youtube_url_with_timestamp = f"https://www.youtube.com/watch?v={active_video.get('video_id')}&t={int(start_sec)}s"
 
-    best_result = results[0]
+    if is_json_request:
+        return jsonify({
+            "success": True,
+            "question": question,
+            "answer": answer_text,
+            "sources": sources,
+            "timestamps": timestamps,
+            "answer_mode": answer_mode,
+            "timestamp": timestamp_str,
+            "start": start_sec,
+            "end": end_sec,
+            "score": 1.0,
+            "youtube_url": youtube_url_with_timestamp,
+            "results": results
+        })
 
-
-    answer = best_result["text"]
-
-
-    timestamp = (
-
-        f"{best_result['start']:.2f}s - "
-        f"{best_result['end']:.2f}s"
-
-    )
-
-
-    print("\n================================")
-    print("RAG RESULT")
-    print("================================")
-
-    print("Answer:", answer)
-    print("Timestamp:", timestamp)
-
-
-    # =================================
-    # SHOW ANSWER
-    # =================================
+    yt_id = active_video.get("video_id") if active_video else None
+    embed_url = active_video.get("embed_url") or (f"https://www.youtube.com/embed/{yt_id}" if yt_id else None)
 
     return render_template(
-
         "index.html",
-
         question=question,
-
-        answer=answer,
-
-        timestamp=timestamp,
-
-        transcript=current_segments,
-
-        filename=current_filename,
-
-        video_url=f"/uploads/{current_filename}"
-
+        answer=answer_text,
+        sources=sources,
+        timestamps=timestamps,
+        answer_mode=answer_mode,
+        timestamp=timestamp_str,
+        start=start_sec,
+        end=end_sec,
+        youtube_timestamp_url=youtube_url_with_timestamp,
+        transcript=segments,
+        video_type=active_video.get("type", "local") if active_video else "local",
+        source_id=active_video.get("id") if active_video else None,
+        filename=active_video.get("filename") or active_video.get("title") if active_video else current_filename,
+        video_title=active_video.get("title") if active_video else current_filename,
+        video_url=active_video.get("video_url") or active_video.get("url") if active_video else f"/uploads/{current_filename}",
+        youtube_id=yt_id,
+        youtube_embed_url=embed_url,
+        video_thumbnail=active_video.get("thumbnail") if active_video else None
     )
 
 
 # =====================================
-# RUN FLASK
+# SERVER CONFIGURATION & ENTRY POINT
 # =====================================
 
+def check_port_available(host: str, port: int) -> bool:
+    """Checks if a TCP port is currently free to bind on the given host."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((host, port))
+            return True
+        except OSError:
+            return False
+
+
+def find_available_port(host: str, start_port: int, max_tries: int = 50) -> int:
+    """Finds the next open TCP port starting from start_port."""
+    for port in range(start_port, start_port + max_tries):
+        if check_port_available(host, port):
+            return port
+    return start_port
+
+
+def get_server_config():
+    """Reads configurable host, port, and debug settings with safe defaults."""
+    host = os.environ.get("HOST", "127.0.0.1").strip()
+    port_str = os.environ.get("PORT", "5000").strip()
+    try:
+        port = int(port_str)
+    except ValueError:
+        port = 5000
+    debug_val = os.environ.get("FLASK_DEBUG", "false").strip().lower()
+    debug = debug_val in ("true", "1", "yes")
+    return host, port, debug
+
+
 if __name__ == "__main__":
+    host, requested_port, debug = get_server_config()
+
+    # Dynamic FFmpeg resolution
+    ffmpeg_ok, ffmpeg_info = ensure_ffmpeg()
+
+    # Check port availability
+    actual_port = requested_port
+    if not check_port_available(host, requested_port):
+        actual_port = find_available_port(host, requested_port)
+        print(f"\n[NOTICE] Port {requested_port} is already in use. Selected available port: {actual_port}")
+
+    app_url = f"http://{host}:{actual_port}"
 
     print("\n================================")
     print("TEMPORAL-AWARE MULTIMODAL RAG")
     print("================================")
-
-    print("Upload folder:")
-    print(UPLOAD_FOLDER)
-
-    print("\nFlask starting...")
+    print("Host:", host)
+    print("Port:", actual_port)
+    print("Application URL:", app_url)
+    print("Upload folder:", UPLOAD_FOLDER)
+    print(f"FFmpeg: {'Available' if ffmpeg_ok else 'Unavailable'}")
+    print(f"Debug Mode: {'Enabled' if debug else 'Disabled'}")
+    print("================================\n")
 
     app.run(
-        debug=True,
-        host="127.0.0.1",
-        port=5000
+        debug=debug,
+        host=host,
+        port=actual_port
     )

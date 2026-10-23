@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Log In{% endblock %}
+{% block page_title %}Account Login{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 40px auto;">
+  <div class="card" style="padding: 36px 32px; border-color: rgba(99, 102, 241, 0.2); box-shadow: var(--shadow-lg);">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <div class="avatar" style="width: 52px; height: 52px; margin: 0 auto 16px; font-size: 1.5rem;">🔑</div>
+      <h2 style="font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;">Welcome Back</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+        Log in to access your personalized learning dashboard, quizzes, and adaptive path.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger" style="margin-bottom: 20px;">
+      <span>⚠️</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth_routes.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-input" placeholder="name@example.com" value="{{ email or '' }}" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+        Log In to AetherLearn
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted);">
+      Don't have an account yet? 
+      <a href="{{ url_for('auth_routes.register') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+        Create an account
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

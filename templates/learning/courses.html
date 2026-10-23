@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}My Courses & Recommendations{% endblock %}
+{% block page_title %}Courses & Recommendations{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 20px auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header Banner -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h2 style="font-size: 1.4rem; font-weight: 800;">Personalized Course Recommender</h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 4px;">
+          Curated courses matched to your learning goals, weak skills, and available weekly study time.
+        </p>
+      </div>
+      <div>
+        <span class="badge badge-primary">Weighted Explainable Ranking</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Personalized Recommendations -->
+  <div>
+    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <span>✨</span> Top Recommendations For You
+    </h3>
+
+    {% if recommendations %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+      {% for item in recommendations %}
+      {% set c = item.course %}
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(99, 102, 241, 0.25);">
+        <div>
+          <!-- Header tags -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; gap: 6px;">
+              <span class="badge badge-primary">{{ c.difficulty.capitalize() }}</span>
+              <span class="badge badge-secondary">{{ c.resource_type.replace('_', ' ').capitalize() }}</span>
+            </div>
+            <span class="badge badge-success">{{ item.relevance_percent }}% Match</span>
+          </div>
+
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; line-height: 1.3;">{{ c.title }}</h4>
+          <div style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 12px;">
+            Provided by <strong>{{ c.provider }}</strong> &bull; ~{{ c.duration_hours }} hours
+          </div>
+
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px;">
+            {{ c.description }}
+          </p>
+
+          <!-- Skills covered -->
+          {% if c.skills_covered %}
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+            {% for s in c.skills_covered %}
+            <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: var(--radius-sm); background-color: var(--bg-surface); color: var(--text-muted);">
+              {{ s }}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Why recommended badge -->
+          <div style="background-color: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--primary); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; color: #c7d2fe; margin-bottom: 18px;">
+            <strong>Why Recommended:</strong>
+            <ul style="margin: 4px 0 0 16px; padding: 0;">
+              {% for r in item.reasons %}
+              <li>{{ r }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+          <a href="{{ c.course_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+            Start Learning ↗
+          </a>
+
+          <div style="display: flex; gap: 8px;">
+            <form method="POST" action="{{ url_for('learning_routes.update_course_status', course_id=c.id) }}">
+              <input type="hidden" name="status" value="dismissed">
+              <button type="submit" class="btn btn-outline btn-sm" title="Dismiss recommendation" style="color: var(--text-dim); padding: 6px 10px;">
+                Dismiss ✕
+              </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('learning_routes.update_course_status', course_id=c.id) }}">
+              {% if status_by_course.get(c.id) == 'enrolled' %}
+                <input type="hidden" name="status" value="completed">
+                <button type="submit" class="btn btn-secondary btn-sm">Mark Completed ✓</button>
+              {% elif status_by_course.get(c.id) == 'completed' %}
+                <span class="badge badge-success" style="padding: 6px 12px;">Completed ✓</span>
+              {% else %}
+                <input type="hidden" name="status" value="enrolled">
+                <button type="submit" class="btn btn-primary btn-sm">Enroll / Save</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty-state">
+      <div class="empty-state-icon">📚</div>
+      <div class="empty-state-title">No Active Recommendations</div>
+      <p class="empty-state-desc">You have enrolled in or completed all recommended courses for your current level.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Full Course Catalogue -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">Curated Educational Catalogue</h3>
+        <p class="card-subtitle">Stable, verified learning materials from reputable open educational sources</p>
+      </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 12px;">Course</th>
+            <th style="padding: 12px;">Provider</th>
+            <th style="padding: 12px;">Difficulty</th>
+            <th style="padding: 12px;">Duration</th>
+            <th style="padding: 12px;">Status</th>
+            <th style="padding: 12px; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in catalogue %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 14px 12px;">
+              <div style="font-weight: 600; color: var(--text-main);">{{ c.title }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">{{ c.skills_covered|join(', ') }}</div>
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-muted);">{{ c.provider }}</td>
+            <td style="padding: 14px 12px;">
+              <span class="badge badge-secondary">{{ c.difficulty.capitalize() }}</span>
+            </td>
+            <td style="padding: 14px 12px; color: var(--text-muted);">~{{ c.duration_hours }}h</td>
+            <td style="padding: 14px 12px;">
+              {% if status_by_course.get(c.id) == 'completed' %}
+                <span class="badge badge-success">Completed</span>
+              {% elif status_by_course.get(c.id) == 'enrolled' %}
+                <span class="badge badge-primary">Enrolled</span>
+              {% elif status_by_course.get(c.id) == 'dismissed' %}
+                <span class="badge badge-secondary">Dismissed</span>
+              {% else %}
+                <span style="color: var(--text-dim);">&mdash;</span>
+              {% endif %}
+            </td>
+            <td style="padding: 14px 12px; text-align: right;">
+              <div style="display: inline-flex; gap: 8px;">
+                <a href="{{ c.course_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+                  View ↗
+                </a>
+                <form method="POST" action="{{ url_for('learning_routes.update_course_status', course_id=c.id) }}" style="display: inline;">
+                  <input type="hidden" name="status" value="enrolled">
+                  <button type="submit" class="btn btn-secondary btn-sm">Enroll</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

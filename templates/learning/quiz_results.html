@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results - {{ quiz.title }}{% endblock %}
+{% block page_title %}Assessment Results & Analysis{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 20px auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Score Summary Hero -->
+  <div class="card" style="padding: 32px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%); border-color: rgba(99, 102, 241, 0.3);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
+      <div>
+        <span class="badge {% if attempt.percentage >= 80 %}badge-success{% elif attempt.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}" style="margin-bottom: 8px;">
+          {% if attempt.percentage >= 80 %}Mastery Performance 🎉{% elif attempt.percentage >= 60 %}Solid Passing Score 👍{% else %}Needs Practice 💡{% endif %}
+        </span>
+        <h2 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;">{{ quiz.title }}</h2>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+          Submitted on {{ attempt.submitted_at.strftime('%B %d, %Y at %H:%M UTC') if attempt.submitted_at else 'Just now' }}
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <div style="font-size: 3rem; font-weight: 900; color: {% if attempt.percentage >= 80 %}var(--accent-emerald){% elif attempt.percentage >= 60 %}var(--primary){% else %}var(--accent-rose){% endif %}; line-height: 1;">
+          {{ attempt.percentage }}%
+        </div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-top: 6px;">
+          {{ attempt.correct_count }} / {{ attempt.total_questions }} Correct
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+      <div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Correct</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-emerald);">{{ attempt.correct_count }}</div>
+      </div>
+      <div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Incorrect</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-rose);">{{ attempt.incorrect_count }}</div>
+      </div>
+      <div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Unanswered</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-dim);">{{ attempt.unanswered_count }}</div>
+      </div>
+      <div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Skill Profile</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-blue);">Updated ✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Adaptive Diagnostic Advice & Next Actions -->
+  {% if advice %}
+  <div class="card" style="border-left: 4px solid var(--accent-purple); background-color: rgba(31, 41, 55, 0.7);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span class="badge badge-primary" style="margin-bottom: 8px;">Adaptive Tutor Feedback</span>
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Empirical Learning Recommendation</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+          {{ advice.explanation }}
+        </p>
+        <div style="margin-top: 8px; font-size: 0.825rem; color: #a5b4fc;">
+          <strong>Suggested Next Difficulty:</strong> {{ advice.suggested_difficulty.capitalize() }} &mdash; <em>{{ advice.difficulty_reason }}</em>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('learning_routes.quiz_generator', difficulty=advice.suggested_difficulty) }}" class="btn btn-primary btn-sm">
+          Take Next Quiz &rarr;
+        </a>
+        <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-outline btn-sm">
+          Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Question-by-Question Detailed Review -->
+  <div>
+    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <span>🔍</span> Detailed Question Review
+    </h3>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for resp in responses %}
+      {% set q = resp.question %}
+      <div class="card" style="border-left: 4px solid {% if resp.is_correct %}var(--accent-emerald){% else %}var(--accent-rose){% endif %}; padding: 24px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <span class="badge {% if resp.is_correct %}badge-success{% else %}badge-danger{% endif %}">
+              {% if resp.is_correct %}✓ Correct{% elif resp.selected_option %}✗ Incorrect{% else %}– Unanswered{% endif %}
+            </span>
+            <span class="badge badge-secondary" style="margin-left: 6px;">{{ resp.topic }}</span>
+          </div>
+
+          {% if resp.source_start is not none %}
+          <div>
+            <a href="{{ url_for('home') }}#t={{ resp.source_start }}" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px;">
+              ⏱️ Video: {{ '%02d:%02d' % (resp.source_start // 60, resp.source_start % 60) }}
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        <h4 style="font-size: 1.05rem; font-weight: 700; line-height: 1.4; margin-bottom: 16px;">
+          {{ loop.index }}. {{ resp.question_text }}
+        </h4>
+
+        <!-- Options Review Grid -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+          {% for letter in ['A', 'B', 'C', 'D'] %}
+          {% set opt_text = resp.options.get(letter, '') %}
+          {% set is_selected = (resp.selected_option == letter) %}
+          {% set is_correct_opt = (resp.correct_option == letter) %}
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.875rem; 
+                      {% if is_correct_opt %}
+                        background-color: rgba(16, 185, 129, 0.12); border: 1px solid var(--accent-emerald); color: #34d399; font-weight: 600;
+                      {% elif is_selected and not is_correct_opt %}
+                        background-color: rgba(244, 63, 94, 0.12); border: 1px solid var(--accent-rose); color: #fb7185;
+                      {% else %}
+                        background-color: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-muted);
+                      {% endif %}">
+            <span style="font-weight: 700; width: 22px;">{{ letter }}.</span>
+            <span style="flex: 1;">{{ opt_text }}</span>
+            {% if is_correct_opt %}
+              <span class="badge badge-success" style="font-size: 0.7rem;">Correct Answer</span>
+            {% elif is_selected %}
+              <span class="badge badge-danger" style="font-size: 0.7rem;">Your Answer</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Explanation Block -->
+        {% if resp.explanation %}
+        <div style="background-color: rgba(11, 15, 25, 0.6); padding: 12px 14px; border-radius: var(--radius-sm); border-left: 2px solid var(--primary); font-size: 0.825rem; color: var(--text-muted); line-height: 1.4;">
+          <strong style="color: var(--text-main);">Explanation:</strong> {{ resp.explanation }}
+        </div>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Footer Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+    <a href="{{ url_for('learning_routes.learning_history') }}" class="btn btn-secondary">
+      &larr; Learning History
+    </a>
+    <div style="display: flex; gap: 12px;">
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-outline">
+        Create Another Quiz
+      </a>
+      <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-primary">
+        Return to Dashboard &rarr;
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

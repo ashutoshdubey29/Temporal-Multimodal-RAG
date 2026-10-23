@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Personalized Onboarding{% endblock %}
+{% block page_title %}Welcome to AetherLearn AI{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 20px auto;">
+  <div class="card" style="padding: 40px; border-color: rgba(99, 102, 241, 0.25); box-shadow: var(--shadow-lg);">
+    
+    <div style="margin-bottom: 32px; text-align: center;">
+      <span class="badge badge-primary" style="margin-bottom: 12px; font-size: 0.8rem; padding: 6px 14px;">Personalization Engine</span>
+      <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Configure Your Personal AI Tutor</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 620px; margin: 8px auto 0;">
+        We tailor your video question generation, skill diagnostics, course recommendations, and milestone schedule to your exact background and study commitments.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+      <span>⚠️</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth_routes.onboarding') }}" id="onboardingForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <!-- Section 1: Academic & Professional Background -->
+      <div style="margin-bottom: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--accent-blue); display: flex; align-items: center; gap: 8px;">
+          <span>🎓</span> 1. Academic & Professional Background
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+          <div class="form-group">
+            <label class="form-label" for="education_level">Current Education Level</label>
+            <select id="education_level" name="education_level" class="form-select">
+              <option value="school" {% if profile.education_level == 'school' %}selected{% endif %}>School / High School</option>
+              <option value="diploma" {% if profile.education_level == 'diploma' %}selected{% endif %}>Diploma</option>
+              <option value="undergraduate" {% if profile.education_level == 'undergraduate' or not profile.education_level %}selected{% endif %}>Undergraduate (B.Tech / B.S. / B.Sc / BCA)</option>
+              <option value="postgraduate" {% if profile.education_level == 'postgraduate' %}selected{% endif %}>Postgraduate (M.Tech / M.S. / MCA)</option>
+              <option value="professional" {% if profile.education_level == 'professional' %}selected{% endif %}>Working Professional</option>
+              <option value="other" {% if profile.education_level == 'other' %}selected{% endif %}>Other / Lifelong Learner</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="field_of_study">Field of Study or Profession</label>
+            <input type="text" id="field_of_study" name="field_of_study" class="form-input" placeholder="e.g. Computer Science, Mechanical, Finance" value="{{ profile.field_of_study or '' }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="current_semester">Current Semester or Year (Optional)</label>
+            <input type="text" id="current_semester" name="current_semester" class="form-input" placeholder="e.g. 5th Semester, 3rd Year" value="{{ profile.current_semester or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Learning Interests & Subject Skill Levels -->
+      <div style="margin-bottom: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
+          <span>💡</span> 2. Learning Interests & Current Skill Levels
+        </h3>
+        <p style="font-size: 0.825rem; color: var(--text-dim); margin-bottom: 18px;">
+          Select the domains you want to learn. For each, indicate your current level so quizzes adapt accurately.
+        </p>
+
+        {% set domain_options = [
+          ('Python', '🐍'),
+          ('Data Structures and Algorithms', '🧩'),
+          ('Machine Learning', '🤖'),
+          ('Web Development', '🌐'),
+          ('Artificial Intelligence', '🧠'),
+          ('Data Science', '📊'),
+          ('Java', '☕'),
+          ('Databases', '🗄️'),
+          ('Cybersecurity', '🛡️'),
+          ('Cloud Computing', '☁️')
+        ] %}
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          {% for dom, icon in domain_options %}
+          <div style="background-color: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <input type="checkbox" id="int_{{ loop.index }}" name="interests" value="{{ dom }}" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if dom in interests or (not interests and dom in ['Python', 'Data Structures and Algorithms']) %}checked{% endif %}>
+              <label for="int_{{ loop.index }}" style="font-weight: 600; font-size: 0.9rem; cursor: pointer;">
+                {{ icon }} {{ dom }}
+              </label>
+            </div>
+            <div style="margin-left: 28px;">
+              <select name="skill_level_{{ dom }}" class="form-select" style="padding: 6px 10px; font-size: 0.8rem;">
+                <option value="beginner" {% if skill_levels.get(dom) == 'beginner' %}selected{% endif %}>Level: Beginner</option>
+                <option value="intermediate" {% if skill_levels.get(dom) == 'intermediate' %}selected{% endif %}>Level: Intermediate</option>
+                <option value="advanced" {% if skill_levels.get(dom) == 'advanced' %}selected{% endif %}>Level: Advanced</option>
+              </select>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-top: 18px;">
+          <label class="form-label" for="custom_interest">Other Custom Topic or Interest (Optional)</label>
+          <input type="text" id="custom_interest" name="custom_interest" class="form-input" placeholder="e.g. Distributed Systems, Rust, Blockchain">
+        </div>
+      </div>
+
+      <!-- Section 3: Learning Goals & Study Schedule -->
+      <div style="margin-bottom: 32px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
+          <span>🎯</span> 3. Primary Goal & Study Commitment
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+          <div class="form-group">
+            <label class="form-label" for="primary_goal">Primary Learning Goal</label>
+            <select id="primary_goal" name="primary_goal" class="form-select">
+              <option value="Prepare for placements" {% if profile.primary_goal == 'Prepare for placements' %}selected{% endif %}>Prepare for campus / tech placements</option>
+              <option value="Learn a new technology" {% if profile.primary_goal == 'Learn a new technology' or not profile.primary_goal %}selected{% endif %}>Learn a new technology / framework</option>
+              <option value="Prepare for interviews" {% if profile.primary_goal == 'Prepare for interviews' %}selected{% endif %}>Prepare for technical interviews</option>
+              <option value="Build practical projects" {% if profile.primary_goal == 'Build practical projects' %}selected{% endif %}>Build real-world portfolio projects</option>
+              <option value="Understand college subjects" {% if profile.primary_goal == 'Understand college subjects' %}selected{% endif %}>Master university course exams</option>
+              <option value="Prepare for competitive examinations" {% if profile.primary_goal == 'Prepare for competitive examinations' %}selected{% endif %}>Prepare for competitive examinations (GATE/GRE)</option>
+              <option value="Career advancement" {% if profile.primary_goal == 'Career advancement' %}selected{% endif %}>Upskill for career promotion</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="target_skill">Primary Target Skill</label>
+            <input type="text" id="target_skill" name="target_skill" class="form-input" placeholder="e.g. Python, Fullstack Web, Algorithms" value="{{ profile.target_skill or 'Python' }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="daily_study_minutes">Daily Available Study Time</label>
+            <select id="daily_study_minutes" name="daily_study_minutes" class="form-select">
+              <option value="20" {% if profile.daily_study_minutes == 20 %}selected{% endif %}>20 mins/day (~2.3 hours/week - Light)</option>
+              <option value="30" {% if profile.daily_study_minutes == 30 %}selected{% endif %}>30 mins/day (~3.5 hours/week - Moderate)</option>
+              <option value="45" {% if profile.daily_study_minutes == 45 or not profile.daily_study_minutes %}selected{% endif %}>45 mins/day (~5.2 hours/week - Standard)</option>
+              <option value="60" {% if profile.daily_study_minutes == 60 %}selected{% endif %}>60 mins/day (~7.0 hours/week - Intensive)</option>
+              <option value="120" {% if profile.daily_study_minutes == 120 %}selected{% endif %}>120 mins/day (~14.0 hours/week - Full Immersion)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="preferred_difficulty">Preferred Question Difficulty</label>
+            <select id="preferred_difficulty" name="preferred_difficulty" class="form-select">
+              <option value="easy" {% if profile.preferred_difficulty == 'easy' %}selected{% endif %}>Easy (Foundational Confidence)</option>
+              <option value="medium" {% if profile.preferred_difficulty == 'medium' or not profile.preferred_difficulty %}selected{% endif %}>Medium (Balanced Application)</option>
+              <option value="hard" {% if profile.preferred_difficulty == 'hard' %}selected{% endif %}>Hard (Rigorous & In-depth)</option>
+              <option value="mixed" {% if profile.preferred_difficulty == 'mixed' %}selected{% endif %}>Mixed (Progressive Ladder)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="preferred_format">Preferred Learning Format</label>
+            <select id="preferred_format" name="preferred_format" class="form-select">
+              <option value="mixture" {% if profile.preferred_format == 'mixture' or not profile.preferred_format %}selected{% endif %}>Mixture (Videos + Quizzes + Reading)</option>
+              <option value="video" {% if profile.preferred_format == 'video' %}selected{% endif %}>Video Heavy (Lecture-based)</option>
+              <option value="practice questions" {% if profile.preferred_format == 'practice questions' %}selected{% endif %}>Practice First (Active Recall / MCQs)</option>
+              <option value="reading" {% if profile.preferred_format == 'reading' %}selected{% endif %}>Reading (Documentation / Tutorials)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="target_completion_date">Target Completion Date (Optional)</label>
+            <input type="date" id="target_completion_date" name="target_completion_date" class="form-input" value="{{ profile.target_completion_date or '' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="career_goal">Long-term Career Goal (Optional)</label>
+          <input type="text" id="career_goal" name="career_goal" class="form-input" placeholder="e.g. AI Research Engineer at top tech company, Full-Stack Developer, Data Scientist" value="{{ profile.career_goal or '' }}">
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <button type="submit" class="btn btn-primary btn-lg" style="padding: 14px 32px;">
+          Save & Launch Personalized Platform 🚀
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

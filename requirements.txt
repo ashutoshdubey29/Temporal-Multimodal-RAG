@@ -1,0 +1,22 @@
+# ====================================================
+# Temporal-Multimodal-RAG Dependencies
+# Tested with Python 3.10 on Windows x86_64
+# ====================================================
+
+# Web Application Framework & Utilities
+Flask>=3.0.0,<4.0.0
+Werkzeug>=3.0.0,<4.0.0
+Flask-SQLAlchemy>=3.1.0
+SQLAlchemy>=2.0.0
+
+# Speech Recognition & Multimodal Models
+openai-whisper>=20231117
+torch>=2.0.0
+
+# Dynamic FFmpeg Distribution for Windows
+imageio-ffmpeg>=0.4.9
+
+# YouTube Metadata, Transcript Extraction, & Audio Processing
+youtube-transcript-api>=1.2.0
+yt-dlp>=2024.0.0
+requests>=2.31.0
