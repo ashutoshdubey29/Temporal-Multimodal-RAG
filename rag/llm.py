@@ -16,6 +16,23 @@ import requests
 
 logger = logging.getLogger("rag.llm")
 
+# Automatically load local .env if present
+_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip("'\"")
+                if k and k not in os.environ:
+                    os.environ[k] = v
+    except Exception:
+        pass
+
 # System prompt adhering strictly to specifications
 SYSTEM_PROMPT = """You are a helpful video-understanding assistant. Answer the user's question using the supplied timestamped transcript evidence.
 
@@ -56,7 +73,7 @@ def get_llm_config() -> dict:
     openai_base = (os.environ.get("OPENAI_API_BASE") or os.environ.get("LLM_API_BASE") or "https://api.openai.com/v1").strip()
     openai_model = (os.environ.get("OPENAI_MODEL") or os.environ.get("LLM_MODEL") or "gpt-4o-mini").strip()
 
-    gemini_model = (os.environ.get("GEMINI_MODEL") or "gemini-1.5-flash").strip()
+    gemini_model = (os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash-lite").strip()
 
     # Determine provider if not specified
     if not provider:

@@ -641,7 +641,7 @@ def score_quiz_submission(
     - Saves QuizAttempt and QuizResponses
     - Triggers skill tracker and learning path adaptations
     """
-    quiz = Quiz.query.get(quiz_id)
+    quiz = db.session.get(Quiz, quiz_id)
     if not quiz:
         return False, "Quiz not found.", None
 

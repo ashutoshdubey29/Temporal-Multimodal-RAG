@@ -28,6 +28,14 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(line_buffering=True)
+
+# Auto-resolve virtual environment: if invoked with system Python, seamlessly re-exec using local .venv
+_venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv", "Scripts", "python.exe"))
+if os.path.exists(_venv_python) and os.path.abspath(sys.executable).lower() != _venv_python.lower():
+    import subprocess
+    sys.exit(subprocess.call([_venv_python] + sys.argv))
+
+
 def load_env_file(env_path: str = ".env") -> None:
     """Loads simple KEY=VALUE configuration from a local .env file if present."""
     if not os.path.exists(env_path):

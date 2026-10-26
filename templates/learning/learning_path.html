@@ -5,163 +5,219 @@
 
 {% block extra_css %}
 <style>
-  .milestone-card { padding: 24px; border-left: 4px solid var(--border-color); }
-  .milestone-card.status-completed { border-left-color: var(--accent-emerald); }
-  .milestone-card.status-in_progress { border-left-color: var(--primary); }
-  .milestone-card.status-needs_review { border-left-color: var(--accent-rose); }
+  .timeline-container {
+    position: relative;
+    padding-left: 36px;
+  }
+  .timeline-container::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    bottom: 24px;
+    left: 17px;
+    width: 2px;
+    background-color: var(--odoo-border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .timeline-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .timeline-marker {
+    position: absolute;
+    left: -36px;
+    top: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background-color: #FFFFFF;
+    border: 2px solid var(--odoo-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--odoo-text-secondary);
+    z-index: 2;
+    transition: all var(--transition-fast);
+  }
+
+  .timeline-item.status-completed .timeline-marker {
+    background-color: var(--odoo-success-bg);
+    border-color: var(--odoo-success);
+    color: var(--odoo-success);
+  }
+  .timeline-item.status-in_progress .timeline-marker {
+    background-color: var(--odoo-purple-primary);
+    border-color: var(--odoo-purple-primary);
+    color: #FFFFFF;
+    box-shadow: 0 0 0 4px var(--odoo-purple-light);
+  }
+  .timeline-item.status-needs_review .timeline-marker {
+    background-color: var(--odoo-error-bg);
+    border-color: var(--odoo-error);
+    color: var(--odoo-error);
+  }
+
+  .milestone-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--odoo-border);
+    border-radius: var(--radius-sm);
+    padding: 18px 22px;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-xs);
+  }
+  .milestone-card:hover {
+    border-color: var(--odoo-border-hover);
+  }
+  .timeline-item.status-in_progress .milestone-card {
+    border-color: rgba(113, 75, 103, 0.4);
+    background-color: #FFFFFF;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 20px auto; display: flex; flex-direction: column; gap: 28px;">
+<div style="max-width: 980px; margin: 20px auto 60px; display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Learning Path Hero Header -->
-  <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(59, 130, 246, 0.08) 100%); border-color: rgba(99, 102, 241, 0.3);">
+  <!-- Roadmap Hero Card -->
+  <div class="card" style="padding: 24px 28px; border: 1px solid var(--odoo-border); background-color: #FFFFFF;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
       <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
           <span class="badge badge-primary">Adaptive Roadmap</span>
           <span class="badge badge-secondary">{{ path.starting_skill_level.capitalize() }} &rarr; {{ path.target_skill_level.capitalize() }}</span>
         </div>
-        <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">{{ path.title }}</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
-          Primary Goal: <strong style="color: var(--text-main);">{{ path.goal }}</strong>
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--odoo-text-primary); letter-spacing: -0.01em;">
+          {{ path.title }}
+        </h2>
+        <p style="font-size: 13.5px; color: var(--odoo-text-secondary); margin-top: 4px;">
+          Primary Goal: <strong style="color: var(--odoo-text-primary);">{{ path.goal }}</strong>
         </p>
       </div>
 
       <div style="text-align: right;">
-        <div style="font-size: 2.2rem; font-weight: 900; color: var(--accent-blue); line-height: 1;">
+        <div style="font-size: 2.2rem; font-weight: 700; color: var(--odoo-purple-primary); line-height: 1;">
           {{ path.overall_progress }}%
         </div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Completed</div>
+        <div style="font-size: 12px; color: var(--odoo-text-muted); margin-top: 4px;">Completed</div>
       </div>
     </div>
 
-    <!-- Overall Progress bar -->
-    <div class="progress-bar-container" style="height: 10px; margin: 20px 0 10px 0;">
-      <div class="progress-bar-fill" id="overallProgressBar" data-progress="{{ path.overall_progress }}"></div>
+    <!-- Progress bar -->
+    <div class="progress-bar-container" style="height: 7px; margin: 18px 0 0 0;">
+      <div class="progress-bar-fill" id="overallProgressBar" style="width: {{ path.overall_progress }}%;"></div>
     </div>
   </div>
-  <script>
-    (function(){
-      var el = document.getElementById('overallProgressBar');
-      if (el) el.style.width = (el.getAttribute('data-progress') || 0) + '%';
-    })();
-  </script>
 
-  <!-- Study-Time Planner Widget -->
+  <!-- Study-Time Planner Summary -->
   {% if schedule %}
-  <div class="card" style="border-left: 4px solid var(--accent-emerald);">
+  <div class="card" style="padding: 18px 24px; border: 1px solid var(--odoo-border); border-left: 3.5px solid var(--odoo-success);">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-          <span class="badge badge-success">Study-Time Planner</span>
-          <span style="font-size: 0.85rem; font-weight: 600;">{{ schedule.daily_study_minutes }} mins / day ({{ schedule.weekly_study_hours }}h / week)</span>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span class="badge badge-success">Study Planner</span>
+          <span style="font-size: 13px; font-weight: 600; color: var(--odoo-text-primary);">
+            {{ schedule.daily_study_minutes }} mins / day ({{ schedule.weekly_study_hours }}h / week)
+          </span>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">
+        <p style="font-size: 13px; color: var(--odoo-text-secondary); line-height: 1.4;">
           {{ schedule.pacing_note }}
         </p>
       </div>
 
-      <div style="display: flex; gap: 20px; text-align: center;">
+      <div style="display: flex; gap: 24px; text-align: center;">
         <div>
-          <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">~{{ schedule.estimated_weeks_remaining }}</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Weeks Left</div>
+          <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-text-primary);">~{{ schedule.estimated_weeks_remaining }}</div>
+          <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase;">Weeks Left</div>
         </div>
         <div>
-          <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">{{ schedule.remaining_estimated_hours }}h</div>
-          <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Work Hours</div>
+          <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-text-primary);">{{ schedule.remaining_estimated_hours }}h</div>
+          <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase;">Total Hours</div>
         </div>
       </div>
     </div>
   </div>
   {% endif %}
 
-  <!-- Ordered Milestones Timeline -->
+  <!-- Timeline Section -->
   <div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-        <span>🗺️</span> Milestones & Learning Units
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: var(--odoo-text-primary); display: flex; align-items: center; gap: 8px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </svg>
+        <span>Milestones Sequence</span>
       </h3>
       
       <form method="POST" action="{{ url_for('learning_routes.reset_learning_path') }}" onsubmit="return confirm('Regenerate your learning roadmap to match your updated profile?');">
         <button type="submit" class="btn btn-outline btn-sm">
-          Reset / Refresh Path ↻
+          <span>Refresh Roadmap</span>
         </button>
       </form>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 16px;">
+    <!-- Vertical Timeline -->
+    <div class="timeline-container">
       {% for m in path.milestones %}
-      <div class="card milestone-card status-{{ m.status }}">
+      <div class="timeline-item status-{{ m.status }}">
         
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--text-dim);">
-                #{{ '%02d' % (loop.index) }}
-              </span>
-              <span class="badge 
-                {% if m.status == 'completed' %}badge-success
-                {% elif m.status == 'in_progress' %}badge-primary
-                {% elif m.status == 'needs_review' %}badge-danger
-                {% else %}badge-secondary{% endif %}">
-                {% if m.status == 'completed' %}Completed ✓
-                {% elif m.status == 'in_progress' %}In Progress ⚡
-                {% elif m.status == 'needs_review' %}Needs Review ⚠️
-                {% else %}Not Started{% endif %}
-              </span>
-              <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ m.target_skill }}</span>
-            </div>
-
-            <h4 style="font-size: 1.15rem; font-weight: 700; line-height: 1.3;">{{ m.title }}</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45;">
-              {{ m.description }}
-            </p>
-          </div>
-
-          <div style="text-align: right; min-width: 100px;">
-            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-dim);">
-              ~{{ m.estimated_hours }}h
-            </div>
-            {% if m.completed_at %}
-            <div style="font-size: 0.7rem; color: var(--accent-emerald); margin-top: 2px;">
-              Finished {{ m.completed_at.strftime('%b %d') }}
-            </div>
-            {% endif %}
-          </div>
+        <!-- Status Marker Node -->
+        <div class="timeline-marker">
+          {% if m.status == 'completed' %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          {% else %}
+            {{ loop.index }}
+          {% endif %}
         </div>
 
-        <!-- Linked Course & Quiz Actions -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; gap: 12px; align-items: center;">
-            {% if m.related_course %}
-            <a href="{{ m.related_course.course_url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; color: var(--accent-blue); text-decoration: none; font-weight: 600;">
-              📖 Course: {{ m.related_course.title[:35] }}... ↗
-            </a>
-            {% endif %}
+        <div class="milestone-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge {% if m.status == 'completed' %}badge-success{% elif m.status == 'in_progress' %}badge-primary{% elif m.status == 'needs_review' %}badge-danger{% else %}badge-secondary{% endif %}">
+                  {{ m.status.replace('_', ' ').capitalize() }}
+                </span>
+                <span style="font-size: 12px; color: var(--odoo-text-muted);">Est: {{ m.estimated_hours }}h</span>
+              </div>
+              <h4 style="font-size: 15px; font-weight: 600; color: var(--odoo-text-primary);">{{ m.title }}</h4>
+            </div>
 
-            <a href="{{ url_for('learning_routes.quiz_generator', topic=m.target_skill) }}" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600;">
-              ⚡ Quiz on {{ m.target_skill }}
-            </a>
+            <!-- Milestone Status Actions -->
+            <div style="display: flex; gap: 6px; align-items: center;">
+              {% if m.status != 'completed' %}
+              <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+                <input type="hidden" name="status" value="completed">
+                <button type="submit" class="btn btn-primary btn-sm" style="font-size: 12px; padding: 4px 10px;">
+                  Mark Complete
+                </button>
+              </form>
+              {% else %}
+              <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+                <input type="hidden" name="status" value="in_progress">
+                <button type="submit" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 3px 8px; color: var(--odoo-text-muted);">
+                  Reopen
+                </button>
+              </form>
+              {% endif %}
+            </div>
           </div>
 
-          <!-- Status toggle buttons -->
-          <div style="display: flex; gap: 8px;">
-            {% if m.status != 'completed' %}
-            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
-              <input type="hidden" name="status" value="in_progress">
-              <button type="submit" class="btn btn-outline btn-sm">Set Active</button>
-            </form>
-            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
-              <input type="hidden" name="status" value="completed">
-              <button type="submit" class="btn btn-primary btn-sm">Mark Complete ✓</button>
-            </form>
-            {% else %}
-            <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
-              <input type="hidden" name="status" value="in_progress">
-              <button type="submit" class="btn btn-outline btn-sm" style="color: var(--text-dim);">Re-open</button>
-            </form>
+          <p style="font-size: 13px; color: var(--odoo-text-secondary); line-height: 1.45; margin-bottom: 10px;">
+            {{ m.description }}
+          </p>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--odoo-text-muted); border-top: 1px solid var(--odoo-border); padding-top: 8px; flex-wrap: wrap; gap: 6px;">
+            <span>Target Concept: <strong style="color: var(--odoo-purple-primary);">{{ m.target_concept }}</strong></span>
+            {% if m.prerequisite_notes %}
+            <span>Prerequisite: {{ m.prerequisite_notes }}</span>
             {% endif %}
           </div>
         </div>
@@ -169,6 +225,7 @@
       </div>
       {% endfor %}
     </div>
+
   </div>
 
 </div>

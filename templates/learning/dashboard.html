@@ -4,346 +4,384 @@
 {% block page_title %}Learning Dashboard{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 28px;">
+<div style="display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Hero Welcome Banner -->
-  <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(17, 24, 39, 0.9) 100%); border-color: rgba(99, 102, 241, 0.3);">
+  <!-- Header Banner -->
+  <div class="card" style="padding: 24px 28px; background-color: #FFFFFF; border: 1px solid var(--odoo-border);">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
       <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-          <span class="badge badge-primary">AI Learning OS</span>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span class="badge badge-primary">Personalized Learning Workspace</span>
           {% if streak > 0 %}
-          <span class="badge badge-warning">🔥 {{ streak }} Day Streak</span>
+          <span class="badge badge-warning">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+            </svg>
+            {{ streak }} Day Streak
+          </span>
           {% endif %}
         </div>
-        <h2 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">
-          Welcome back, {{ user.full_name }}! 👋
-        </h2>
-        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 4px;">
-          Target Goal: <strong style="color: var(--text-main);">{{ profile.primary_goal }}</strong> &bull; Focus: <strong style="color: var(--primary);">{{ profile.target_skill }}</strong>
+        <h1 style="font-size: 1.65rem; font-weight: 700; letter-spacing: -0.01em; color: var(--odoo-text-primary);">
+          Welcome back, {{ user.full_name }}
+        </h1>
+        <p style="font-size: 13.5px; color: var(--odoo-text-secondary); margin-top: 4px;">
+          Primary Goal: <strong style="color: var(--odoo-text-primary); font-weight: 600;">{{ profile.primary_goal }}</strong> &bull; Target Focus: <strong style="color: var(--odoo-purple-primary); font-weight: 600;">{{ profile.target_skill }}</strong>
         </p>
       </div>
-      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <a href="{{ url_for('home') }}" class="btn btn-secondary">
-          <span>🎥</span> Learn with Video
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+          <span>Learn with Video</span>
         </a>
         <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary">
-          <span>⚡</span> Generate AI Quiz
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Generate AI Quiz</span>
         </a>
       </div>
     </div>
   </div>
 
-  <!-- Real Progress & Diagnostic KPI Metrics -->
+  <!-- KPI Metrics Grid -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-    <!-- Overall Path Progress -->
-    <div class="card">
-      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
-        Learning Path Progress
-      </div>
-      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-blue); margin: 6px 0;">
-        {{ learning_path.overall_progress }}%
-      </div>
-      <div class="progress-bar-container">
-        <div class="progress-bar-fill" style="width: {{ learning_path.overall_progress }}%;"></div>
-      </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-        {{ learning_path.title }}
-      </div>
-    </div>
-
     <!-- Quizzes Completed -->
-    <div class="card">
-      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
-        Quizzes Completed
+    <div class="card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-text-secondary);">
+          Quizzes Completed
+        </span>
+        <div style="width: 32px; height: 32px; border-radius: 6px; background-color: var(--odoo-purple-light); color: var(--odoo-purple-primary); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 11 12 14 22 4"></polyline>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </div>
       </div>
-      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-emerald); margin: 6px 0;">
+      <div style="font-size: 1.85rem; font-weight: 700; color: var(--odoo-text-primary); margin: 6px 0 2px;">
         {{ quizzes_completed }}
       </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted);">
+      <div style="font-size: 12px; color: var(--odoo-text-muted);">
         {% if quizzes_completed > 0 %}
-        Authoritatively assessed by AI tutor
+          Authoritative assessments logged
         {% else %}
-        No quizzes completed yet
+          No assessments completed yet
         {% endif %}
       </div>
     </div>
 
-    <!-- Average Score -->
-    <div class="card">
-      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
-        Average Accuracy
+    <!-- Average Accuracy -->
+    <div class="card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-text-secondary);">
+          Average Accuracy
+        </span>
+        <div style="width: 32px; height: 32px; border-radius: 6px; background-color: var(--odoo-success-bg); color: var(--odoo-success); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+        </div>
       </div>
-      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-purple); margin: 6px 0;">
+      <div style="font-size: 1.85rem; font-weight: 700; color: var(--odoo-text-primary); margin: 6px 0 2px;">
         {% if quizzes_completed > 0 %}{{ avg_score }}%{% else %}&mdash;{% endif %}
       </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted);">
-        {% if avg_score >= 80 %}Mastery tier (>80% avg){% elif avg_score >= 60 %}Intermediate tier{% elif quizzes_completed > 0 %}Foundational practice tier{% else %}Take your first quiz to calibrate{% endif %}
+      <div style="font-size: 12px; color: var(--odoo-text-muted);">
+        {% if avg_score >= 80 %}Mastery tier (>80% accuracy){% elif avg_score >= 60 %}Proficient tier{% elif quizzes_completed > 0 %}Foundational review recommended{% else %}Take a quiz to calculate calibration{% endif %}
       </div>
     </div>
 
-    <!-- Learning Streak -->
-    <div class="card">
-      <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700;">
-        Activity Streak
+    <!-- Learning Path Progress -->
+    <div class="card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-text-secondary);">
+          Path Progress
+        </span>
+        <div style="width: 32px; height: 32px; border-radius: 6px; background-color: var(--odoo-purple-light); color: var(--odoo-purple-primary); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+          </svg>
+        </div>
       </div>
-      <div style="font-size: 2rem; font-weight: 800; color: var(--accent-amber); margin: 6px 0;">
+      <div style="font-size: 1.85rem; font-weight: 700; color: var(--odoo-purple-primary); margin: 6px 0 2px;">
+        {{ learning_path.overall_progress }}%
+      </div>
+      <div class="progress-bar-container" style="height: 6px; margin: 4px 0 6px;">
+        <div class="progress-bar-fill" style="width: {{ learning_path.overall_progress }}%;"></div>
+      </div>
+      <div style="font-size: 11.5px; color: var(--odoo-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        {{ learning_path.title }}
+      </div>
+    </div>
+
+    <!-- Active Streak -->
+    <div class="card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-text-secondary);">
+          Learning Streak
+        </span>
+        <div style="width: 32px; height: 32px; border-radius: 6px; background-color: var(--odoo-warning-bg); color: var(--odoo-warning); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+          </svg>
+        </div>
+      </div>
+      <div style="font-size: 1.85rem; font-weight: 700; color: var(--odoo-text-primary); margin: 6px 0 2px;">
         {{ streak }} {% if streak == 1 %}Day{% else %}Days{% endif %}
       </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted);">
-        {% if streak > 0 %}Consistently active{% else %}Complete an activity today to start a streak!{% endif %}
+      <div style="font-size: 12px; color: var(--odoo-text-muted);">
+        {% if streak > 0 %}Consistently active this week{% else %}Complete an activity today to start a streak{% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Recommended Next Action & Learning Milestone Banner -->
+  <!-- Primary Recommended Next Action -->
   {% if recommended_activity %}
-  <div class="card" style="border-left: 4px solid var(--primary); background: rgba(31, 41, 55, 0.6);">
+  <div class="card" style="border-left: 4px solid var(--odoo-purple-primary); background-color: #FFFFFF; padding: 20px 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
         <span class="badge badge-primary" style="margin-bottom: 6px;">Recommended Next Action</span>
-        <h3 style="font-size: 1.15rem; font-weight: 700;">{{ recommended_activity.title }}</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">{{ recommended_activity.description }}</p>
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--odoo-text-primary);">{{ recommended_activity.title }}</h2>
+        <p style="font-size: 13px; color: var(--odoo-text-secondary); margin-top: 4px;">{{ recommended_activity.description }}</p>
       </div>
       <a href="{{ recommended_activity.action_url }}" class="btn btn-primary">
-        {{ recommended_activity.action_label }} &rarr;
+        <span>{{ recommended_activity.action_label }}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
       </a>
     </div>
   </div>
   {% endif %}
 
-  <!-- Two-Column Grid: Skills Diagnostics vs Upcoming Milestones -->
+  <!-- Balanced Two-Column Layout -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
 
-    <!-- Skill Diagnostic Card -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h3 class="card-title"><span>🎯</span> Skill Diagnostics</h3>
-          <p class="card-subtitle">Empirical proficiency derived from your quiz responses</p>
-        </div>
-        <a href="{{ url_for('learning_routes.skills_overview') }}" class="btn btn-outline btn-sm">View All</a>
-      </div>
+    <!-- Left Column: Upcoming Milestones & Recent Activity -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
 
-      {% if strong_skills or weak_skills %}
-        {% if strong_skills %}
-        <div style="margin-bottom: 16px;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 8px;">
-            Strongest Skills
-          </div>
-          {% for s in strong_skills %}
-          <div style="margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
-              <span>{{ s.skill_name }}</span>
-              <span style="color: var(--accent-emerald);">{{ s.estimated_proficiency }}%</span>
-            </div>
-            <div class="progress-bar-container" style="height: 6px; margin: 0;">
-              <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-emerald);"></div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        {% if weak_skills %}
-        <div>
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-rose); text-transform: uppercase; margin-bottom: 8px;">
-            Needs Improvement
-          </div>
-          {% for s in weak_skills %}
-          <div style="margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
-              <span>{{ s.skill_name }}</span>
-              <span style="color: var(--accent-rose);">{{ s.estimated_proficiency }}%</span>
-            </div>
-            <div class="progress-bar-container" style="height: 6px; margin: 0;">
-              <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background: var(--accent-rose);"></div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-      {% else %}
-        <div class="empty-state">
-          <div class="empty-state-icon">📊</div>
-          <div class="empty-state-title">No Skill Evidence Yet</div>
-          <p class="empty-state-desc">Take your first quiz from a video or topic to diagnose your proficiency.</p>
-          <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Take Assessment</a>
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Upcoming Milestones Card -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h3 class="card-title"><span>🗺️</span> Upcoming Milestones</h3>
-          <p class="card-subtitle">Next steps in your adaptive learning path</p>
-        </div>
-        <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-outline btn-sm">Full Path</a>
-      </div>
-
-      {% if upcoming_milestones %}
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-          {% for m in upcoming_milestones %}
-          <div style="background-color: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border-left: 3px solid {% if m.status == 'in_progress' %}var(--primary){% elif m.status == 'needs_review' %}var(--accent-rose){% else %}var(--text-dim){% endif %};">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 600; font-size: 0.9rem;">{{ m.title }}</span>
-              <span class="badge {% if m.status == 'in_progress' %}badge-primary{% elif m.status == 'needs_review' %}badge-danger{% else %}badge-secondary{% endif %}">
-                {{ m.status.replace('_', ' ').capitalize() }}
-              </span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">{{ m.description }}</p>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.75rem; color: var(--text-dim);">
-              <span>Est: {{ m.estimated_hours }}h</span>
-              <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
-                <input type="hidden" name="status" value="completed">
-                <button type="submit" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.7rem;">Mark Complete</button>
-              </form>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state">
-          <div class="empty-state-icon">🏆</div>
-          <div class="empty-state-title">All Milestones Completed!</div>
-          <p class="empty-state-desc">Congratulations on completing your path. You can refresh or add new milestones.</p>
-          <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-primary btn-sm">Manage Path</a>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Recommended Courses Grid -->
-  <div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <div>
-        <h3 style="font-size: 1.25rem; font-weight: 700;">Recommended for You</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">Explainable recommendations based on your goal, skill gaps, and study pace</p>
-      </div>
-      <a href="{{ url_for('learning_routes.courses_view') }}" class="btn btn-outline btn-sm">Browse Catalogue</a>
-    </div>
-
-    {% if course_recs %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
-      {% for item in course_recs %}
-      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <span class="badge badge-primary">{{ item.course.difficulty.capitalize() }}</span>
-            <span class="badge badge-success">{{ item.relevance_percent }}% Match</span>
-          </div>
-          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">{{ item.course.title }}</h4>
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px;">Provided by {{ item.course.provider }} &bull; ~{{ item.course.duration_hours }}h</div>
-          <p style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
-            {{ item.course.description[:130] }}...
-          </p>
-
-          <div style="background-color: rgba(99, 102, 241, 0.08); border-left: 2px solid var(--primary); padding: 8px 10px; border-radius: 4px; font-size: 0.75rem; color: #a5b4fc; margin-bottom: 16px;">
-            <strong>Why:</strong> {{ item.primary_reason }}
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
-          <a href="{{ item.course.course_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
-            Visit Course ↗
-          </a>
-          <form method="POST" action="{{ url_for('learning_routes.update_course_status', course_id=item.course.id) }}">
-            <input type="hidden" name="status" value="enrolled">
-            <button type="submit" class="btn btn-primary btn-sm">
-              {% if item.is_enrolled %}Enrolled ✓{% else %}Save Course{% endif %}
-            </button>
-          </form>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="card empty-state">
-      <div class="empty-state-icon">📚</div>
-      <div class="empty-state-title">No Recommendations Available</div>
-      <p class="empty-state-desc">Update your profile goals to receive personalized course suggestions.</p>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- Recent Video Learning & Quiz Activity -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
-    <!-- Recent Video Sessions -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h3 class="card-title"><span>🎥</span> Recent Video Sessions</h3>
-          <p class="card-subtitle">Lectures and videos you studied</p>
-        </div>
-        <a href="{{ url_for('home') }}" class="btn btn-outline btn-sm">New Video</a>
-      </div>
-
-      {% if recent_videos %}
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        {% for v in recent_videos %}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: var(--bg-surface); border-radius: var(--radius-sm);">
-          <div style="min-width: 0; flex: 1;">
-            <div style="font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ v.title }}</div>
-            <div style="font-size: 0.72rem; color: var(--text-dim);">{{ v.transcript_source }} &bull; {{ v.created_at.strftime('%b %d, %Y') if v.created_at else '' }}</div>
-          </div>
-          <a href="{{ url_for('learning_routes.quiz_generator', video_session_id=v.id) }}" class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;">
-            Quiz
-          </a>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="empty-state" style="padding: 24px 12px;">
-        <div class="empty-state-icon" style="font-size: 1.8rem;">🎬</div>
-        <div class="empty-state-title" style="font-size: 1rem;">No Video Sessions Yet</div>
-        <p class="empty-state-desc" style="font-size: 0.8rem; margin-bottom: 12px;">Transcribe a lecture or YouTube video to begin.</p>
-        <a href="{{ url_for('home') }}" class="btn btn-primary btn-sm">Upload Video</a>
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- Recent Quiz Attempts -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h3 class="card-title"><span>📝</span> Recent Quiz Attempts</h3>
-          <p class="card-subtitle">Your latest quiz results and scores</p>
-        </div>
-        <a href="{{ url_for('learning_routes.learning_history') }}" class="btn btn-outline btn-sm">All Attempts</a>
-      </div>
-
-      {% if recent_attempts %}
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        {% for a in recent_attempts %}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: var(--bg-surface); border-radius: var(--radius-sm);">
+      <!-- Upcoming Milestones -->
+      <div class="card">
+        <div class="card-header">
           <div>
-            <div style="font-weight: 600; font-size: 0.85rem;">{{ a.quiz.title if a.quiz else 'Assessment' }}</div>
-            <div style="font-size: 0.72rem; color: var(--text-dim);">
-              {{ a.submitted_at.strftime('%b %d, %Y') if a.submitted_at else '' }} &bull; {{ a.correct_count }}/{{ a.total_questions }} correct
+            <h3 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+              <span>Upcoming Milestones</span>
+            </h3>
+            <p class="card-subtitle">Next steps in your adaptive learning roadmap</p>
+          </div>
+          <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-outline btn-sm">Full Path</a>
+        </div>
+
+        {% if upcoming_milestones %}
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for m in upcoming_milestones %}
+            <div style="background-color: var(--odoo-lavender-pale); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--odoo-border); border-left: 3px solid {% if m.status == 'in_progress' %}var(--odoo-purple-primary){% elif m.status == 'needs_review' %}var(--odoo-error){% else %}var(--odoo-border-hover){% endif %};">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <span style="font-weight: 600; font-size: 13.5px; color: var(--odoo-text-primary);">{{ m.title }}</span>
+                <span class="badge {% if m.status == 'in_progress' %}badge-primary{% elif m.status == 'needs_review' %}badge-danger{% else %}badge-secondary{% endif %}">
+                  {{ m.status.replace('_', ' ').capitalize() }}
+                </span>
+              </div>
+              <p style="font-size: 12.5px; color: var(--odoo-text-secondary); margin-top: 5px; line-height: 1.4;">{{ m.description }}</p>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--odoo-text-muted);">
+                <span>Est: {{ m.estimated_hours }}h</span>
+                <form method="POST" action="{{ url_for('learning_routes.update_milestone_status', milestone_id=m.id) }}" style="display: inline;">
+                  <input type="hidden" name="status" value="completed">
+                  <button type="submit" class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11.5px;">Mark Complete</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" style="padding: 28px 16px;">
+            <div class="empty-state-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="7"></circle>
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+              </svg>
+            </div>
+            <div class="empty-state-title">All Milestones Complete</div>
+            <p class="empty-state-desc">You have completed all milestones in this sequence. You can refresh your roadmap anytime.</p>
+            <a href="{{ url_for('learning_routes.learning_path_view') }}" class="btn btn-outline btn-sm">View Roadmap</a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Recent Quiz Activity -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Recent Quiz Activity</span>
+            </h3>
+            <p class="card-subtitle">Your latest assessment submissions</p>
+          </div>
+          <a href="{{ url_for('learning_routes.learning_history') }}" class="btn btn-outline btn-sm">Full History</a>
+        </div>
+
+        {% if recent_attempts %}
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% for a in recent_attempts %}
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background-color: var(--odoo-lavender-pale); border-radius: var(--radius-sm); border: 1px solid var(--odoo-border);">
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-weight: 600; font-size: 13px; color: var(--odoo-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ a.quiz.title if a.quiz else 'Assessment' }}
+              </div>
+              <div style="font-size: 11.5px; color: var(--odoo-text-muted); margin-top: 2px;">
+                {{ a.submitted_at.strftime('%b %d, %Y') if a.submitted_at else '' }} &bull; {{ a.correct_count }}/{{ a.total_questions }} correct
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge {% if a.percentage >= 80 %}badge-success{% elif a.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}">
+                {{ a.percentage }}%
+              </span>
+              <a href="{{ url_for('learning_routes.quiz_attempt_results', attempt_id=a.id) }}" class="btn btn-outline btn-sm" style="padding: 3px 8px; font-size: 11.5px;">
+                Review
+              </a>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span class="badge {% if a.percentage >= 80 %}badge-success{% elif a.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}">
-              {{ a.percentage }}%
-            </span>
-            <a href="{{ url_for('learning_routes.quiz_attempt_results', attempt_id=a.id) }}" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;">
-              Review
-            </a>
-          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 24px 12px;">
+          <div class="empty-state-title" style="font-size: 14px;">No Quizzes Attempted Yet</div>
+          <p class="empty-state-desc" style="font-size: 12.5px; margin-bottom: 12px;">Generate a quiz from a video lecture or specific topic to test your knowledge.</p>
+          <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Create First Quiz</a>
+        </div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="empty-state" style="padding: 24px 12px;">
-        <div class="empty-state-icon" style="font-size: 1.8rem;">⚡</div>
-        <div class="empty-state-title" style="font-size: 1rem;">No Quizzes Attempted</div>
-        <p class="empty-state-desc" style="font-size: 0.8rem; margin-bottom: 12px;">Generate an MCQ quiz to evaluate your retention.</p>
-        <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Create Quiz</a>
-      </div>
-      {% endif %}
+
     </div>
+
+    <!-- Right Column: Skills Diagnostics & Course Recommendations -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- Skill Diagnostics -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+              </svg>
+              <span>Skill Diagnostics</span>
+            </h3>
+            <p class="card-subtitle">Empirical proficiency computed from quiz evidence</p>
+          </div>
+          <a href="{{ url_for('learning_routes.skills_overview') }}" class="btn btn-outline btn-sm">All Skills</a>
+        </div>
+
+        {% if strong_skills or weak_skills %}
+          {% if strong_skills %}
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--odoo-success); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">
+              Strongest Topics
+            </div>
+            {% for s in strong_skills %}
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 3px;">
+                <span>{{ s.skill_name }}</span>
+                <span style="color: var(--odoo-success); font-weight: 600;">{{ s.estimated_proficiency }}%</span>
+              </div>
+              <div class="progress-bar-container" style="height: 5px; margin: 0; background-color: var(--odoo-success-bg);">
+                <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background-color: var(--odoo-success);"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if weak_skills %}
+          <div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--odoo-error); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">
+              Skills to Improve
+            </div>
+            {% for s in weak_skills %}
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 3px;">
+                <span>{{ s.skill_name }}</span>
+                <span style="color: var(--odoo-error); font-weight: 600;">{{ s.estimated_proficiency }}%</span>
+              </div>
+              <div class="progress-bar-container" style="height: 5px; margin: 0; background-color: var(--odoo-error-bg);">
+                <div class="progress-bar-fill" style="width: {{ s.estimated_proficiency }}%; background-color: var(--odoo-error);"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 12px;">
+            <div class="empty-state-title" style="font-size: 14px;">No Skill Data Calibrated</div>
+            <p class="empty-state-desc" style="font-size: 12.5px; margin-bottom: 12px;">Take your first quiz to diagnose conceptual mastery and identify weak areas.</p>
+            <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">Start Calibration Quiz</a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Recommended Courses -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>Recommended Courses</span>
+            </h3>
+            <p class="card-subtitle">Matched to your learning goal and study pace</p>
+          </div>
+          <a href="{{ url_for('learning_routes.courses_view') }}" class="btn btn-outline btn-sm">Catalogue</a>
+        </div>
+
+        {% if course_recs %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {% for item in course_recs %}
+          <div style="background-color: var(--odoo-lavender-pale); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--odoo-border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <span style="font-weight: 600; font-size: 13px; color: var(--odoo-text-primary);">{{ item.course.title }}</span>
+              <span class="badge badge-success" style="font-size: 11px;">{{ item.relevance_percent }}% Match</span>
+            </div>
+            <div style="font-size: 11.5px; color: var(--odoo-text-muted); margin-top: 3px;">
+              {{ item.course.provider }} &bull; ~{{ item.course.duration_hours }}h &bull; {{ item.course.difficulty.capitalize() }}
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--odoo-purple-primary); background-color: #FFFFFF; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--odoo-border);">
+              <strong>Why:</strong> {{ item.primary_reason }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 24px 12px;">
+          <div class="empty-state-title" style="font-size: 14px;">No Courses Found</div>
+          <p class="empty-state-desc" style="font-size: 12.5px;">Update your preferences in Profile to refresh course recommendations.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
   </div>
 
 </div>

@@ -184,7 +184,7 @@ def save_user_course_status(user_id: int, course_id: int, status: str) -> Tuple[
     if status not in valid_statuses:
         return False, f"Invalid course status '{status}'."
 
-    course = Course.query.get(course_id)
+    course = db.session.get(Course, course_id)
     if not course:
         return False, "Course not found."
 

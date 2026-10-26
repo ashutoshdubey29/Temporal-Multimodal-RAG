@@ -1,74 +1,79 @@
 {% extends "base.html" %}
 
 {% block title %}Quiz Results - {{ quiz.title }}{% endblock %}
-{% block page_title %}Assessment Results & Analysis{% endblock %}
+{% block page_title %}Assessment Results{% endblock %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 20px auto; display: flex; flex-direction: column; gap: 28px;">
+<div style="max-width: 900px; margin: 20px auto 60px; display: flex; flex-direction: column; gap: 24px;">
 
   <!-- Score Summary Hero -->
-  <div class="card" style="padding: 32px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%); border-color: rgba(99, 102, 241, 0.3);">
+  <div class="card" style="padding: 28px 30px; border: 1px solid var(--odoo-border); background-color: #FFFFFF;">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
       <div>
         <span class="badge {% if attempt.percentage >= 80 %}badge-success{% elif attempt.percentage >= 60 %}badge-primary{% else %}badge-danger{% endif %}" style="margin-bottom: 8px;">
-          {% if attempt.percentage >= 80 %}Mastery Performance 🎉{% elif attempt.percentage >= 60 %}Solid Passing Score 👍{% else %}Needs Practice 💡{% endif %}
+          {% if attempt.percentage >= 80 %}Proficiency Achieved{% elif attempt.percentage >= 60 %}Passing Assessment{% else %}Review Recommended{% endif %}
         </span>
-        <h2 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;">{{ quiz.title }}</h2>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-          Submitted on {{ attempt.submitted_at.strftime('%B %d, %Y at %H:%M UTC') if attempt.submitted_at else 'Just now' }}
+        <h2 style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--odoo-text-primary);">
+          {{ quiz.title }}
+        </h2>
+        <div style="font-size: 13px; color: var(--odoo-text-muted); margin-top: 4px;">
+          Completed on {{ attempt.submitted_at.strftime('%B %d, %Y at %H:%M UTC') if attempt.submitted_at else 'Just now' }}
         </div>
       </div>
 
       <div style="text-align: right;">
-        <div style="font-size: 3rem; font-weight: 900; color: {% if attempt.percentage >= 80 %}var(--accent-emerald){% elif attempt.percentage >= 60 %}var(--primary){% else %}var(--accent-rose){% endif %}; line-height: 1;">
+        <div style="font-size: 2.75rem; font-weight: 700; color: {% if attempt.percentage >= 80 %}var(--odoo-success){% elif attempt.percentage >= 60 %}var(--odoo-purple-primary){% else %}var(--odoo-error){% endif %}; line-height: 1;">
           {{ attempt.percentage }}%
         </div>
-        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-top: 6px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--odoo-text-secondary); margin-top: 6px;">
           {{ attempt.correct_count }} / {{ attempt.total_questions }} Correct
         </div>
       </div>
     </div>
 
-    <!-- Quick Stats Bar -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+    <!-- Metric Breakdown Bar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--odoo-border);">
       <div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Correct</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-emerald);">{{ attempt.correct_count }}</div>
+        <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Correct</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-success); margin-top: 2px;">{{ attempt.correct_count }}</div>
       </div>
       <div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Incorrect</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-rose);">{{ attempt.incorrect_count }}</div>
+        <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Incorrect</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-error); margin-top: 2px;">{{ attempt.incorrect_count }}</div>
       </div>
       <div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Unanswered</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-dim);">{{ attempt.unanswered_count }}</div>
+        <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Unanswered</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-text-secondary); margin-top: 2px;">{{ attempt.unanswered_count }}</div>
       </div>
       <div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Skill Profile</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-blue);">Updated ✓</div>
+        <div style="font-size: 11px; color: var(--odoo-text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Skill Model</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--odoo-purple-primary); margin-top: 2px;">Updated</div>
       </div>
     </div>
   </div>
 
   <!-- Adaptive Diagnostic Advice & Next Actions -->
   {% if advice %}
-  <div class="card" style="border-left: 4px solid var(--accent-purple); background-color: rgba(31, 41, 55, 0.7);">
+  <div class="card" style="border-left: 4px solid var(--odoo-purple-primary); padding: 22px 26px;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
       <div>
-        <span class="badge badge-primary" style="margin-bottom: 8px;">Adaptive Tutor Feedback</span>
-        <h3 style="font-size: 1.15rem; font-weight: 700;">Empirical Learning Recommendation</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+        <span class="badge badge-primary" style="margin-bottom: 6px;">Diagnostic Feedback</span>
+        <h3 style="font-size: 15px; font-weight: 600; color: var(--odoo-text-primary);">Learning Recommendation</h3>
+        <p style="font-size: 13.5px; color: var(--odoo-text-secondary); margin-top: 4px; line-height: 1.5; max-width: 600px;">
           {{ advice.explanation }}
         </p>
-        <div style="margin-top: 8px; font-size: 0.825rem; color: #a5b4fc;">
-          <strong>Suggested Next Difficulty:</strong> {{ advice.suggested_difficulty.capitalize() }} &mdash; <em>{{ advice.difficulty_reason }}</em>
+        <div style="margin-top: 8px; font-size: 13px; color: var(--odoo-purple-primary); background-color: var(--odoo-lavender-pale); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--odoo-border);">
+          <strong>Suggested Next Step:</strong> Practice at <strong>{{ advice.suggested_difficulty.capitalize() }}</strong> difficulty &bull; <em>{{ advice.difficulty_reason }}</em>
         </div>
       </div>
-      <div style="display: flex; gap: 10px;">
+      <div style="display: flex; gap: 8px; align-items: center;">
         <a href="{{ url_for('learning_routes.quiz_generator', difficulty=advice.suggested_difficulty) }}" class="btn btn-primary btn-sm">
-          Take Next Quiz &rarr;
+          <span>Practice Next Quiz</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </a>
-        <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-outline btn-sm">
+        <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-secondary btn-sm">
           Dashboard
         </a>
       </div>
@@ -78,66 +83,75 @@
 
   <!-- Question-by-Question Detailed Review -->
   <div>
-    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-      <span>🔍</span> Detailed Question Review
+    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--odoo-text-primary); display: flex; align-items: center; gap: 8px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--odoo-purple-primary);">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      <span>Question-by-Question Review</span>
     </h3>
 
-    <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
       {% for resp in responses %}
-      {% set q = resp.question %}
-      <div class="card" style="border-left: 4px solid {% if resp.is_correct %}var(--accent-emerald){% else %}var(--accent-rose){% endif %}; padding: 24px;">
+      <div class="card" style="border-left: 3.5px solid {% if resp.is_correct %}var(--odoo-success){% else %}var(--odoo-error){% endif %}; padding: 22px;">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <span class="badge {% if resp.is_correct %}badge-success{% else %}badge-danger{% endif %}">
-              {% if resp.is_correct %}✓ Correct{% elif resp.selected_option %}✗ Incorrect{% else %}– Unanswered{% endif %}
+              {% if resp.is_correct %}Correct{% elif resp.selected_option %}Incorrect{% else %}Unanswered{% endif %}
             </span>
-            <span class="badge badge-secondary" style="margin-left: 6px;">{{ resp.topic }}</span>
+            <span class="badge badge-secondary">{{ resp.topic }}</span>
           </div>
 
           {% if resp.source_start is not none %}
           <div>
-            <a href="{{ url_for('home') }}#t={{ resp.source_start }}" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px;">
-              ⏱️ Video: {{ '%02d:%02d' % (resp.source_start // 60, resp.source_start % 60) }}
+            <a href="{{ url_for('home') }}#t={{ resp.source_start }}" target="_blank" class="btn btn-outline btn-sm" style="font-size: 12px; padding: 3px 8px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Timestamp: {{ resp.source_start|int }}s</span>
             </a>
           </div>
           {% endif %}
         </div>
 
-        <h4 style="font-size: 1.05rem; font-weight: 700; line-height: 1.4; margin-bottom: 16px;">
-          {{ loop.index }}. {{ resp.question_text }}
+        <h4 style="font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--odoo-text-primary); margin-bottom: 14px;">
+          Question {{ loop.index }}: {{ resp.question_text }}
         </h4>
 
-        <!-- Options Review Grid -->
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+        <!-- Options Comparison -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 14px;">
           {% for letter in ['A', 'B', 'C', 'D'] %}
           {% set opt_text = resp.options.get(letter, '') %}
           {% set is_selected = (resp.selected_option == letter) %}
           {% set is_correct_opt = (resp.correct_option == letter) %}
-
-          <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.875rem; 
-                      {% if is_correct_opt %}
-                        background-color: rgba(16, 185, 129, 0.12); border: 1px solid var(--accent-emerald); color: #34d399; font-weight: 600;
-                      {% elif is_selected and not is_correct_opt %}
-                        background-color: rgba(244, 63, 94, 0.12); border: 1px solid var(--accent-rose); color: #fb7185;
-                      {% else %}
-                        background-color: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-muted);
-                      {% endif %}">
-            <span style="font-weight: 700; width: 22px;">{{ letter }}.</span>
-            <span style="flex: 1;">{{ opt_text }}</span>
-            {% if is_correct_opt %}
-              <span class="badge badge-success" style="font-size: 0.7rem;">Correct Answer</span>
-            {% elif is_selected %}
-              <span class="badge badge-danger" style="font-size: 0.7rem;">Your Answer</span>
-            {% endif %}
+          <div style="padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; border: 1px solid {% if is_correct_opt %}rgba(33, 134, 91, 0.35){% elif is_selected and not is_correct_opt %}rgba(196, 61, 75, 0.35){% else %}var(--odoo-border){% endif %}; background-color: {% if is_correct_opt %}var(--odoo-success-bg){% elif is_selected and not is_correct_opt %}var(--odoo-error-bg){% else %}#FFFFFF{% endif %};">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 700; width: 22px; color: {% if is_correct_opt %}var(--odoo-success){% elif is_selected and not is_correct_opt %}var(--odoo-error){% else %}var(--odoo-text-secondary){% endif %};">
+                {{ letter }}.
+              </span>
+              <span style="color: var(--odoo-text-primary);">{{ opt_text }}</span>
+            </div>
+            <div>
+              {% if is_correct_opt %}
+              <span style="font-size: 11.5px; font-weight: 600; color: var(--odoo-success);">Correct Answer</span>
+              {% elif is_selected %}
+              <span style="font-size: 11.5px; font-weight: 600; color: var(--odoo-error);">Your Selection</span>
+              {% endif %}
+            </div>
           </div>
           {% endfor %}
         </div>
 
-        <!-- Explanation Block -->
+        <!-- Explanation Card -->
         {% if resp.explanation %}
-        <div style="background-color: rgba(11, 15, 25, 0.6); padding: 12px 14px; border-radius: var(--radius-sm); border-left: 2px solid var(--primary); font-size: 0.825rem; color: var(--text-muted); line-height: 1.4;">
-          <strong style="color: var(--text-main);">Explanation:</strong> {{ resp.explanation }}
+        <div style="background-color: var(--odoo-lavender-pale); border: 1px solid var(--odoo-border); border-left: 3px solid var(--odoo-purple-primary); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px;">
+          <strong style="color: var(--odoo-purple-primary);">Explanation:</strong>
+          <span style="color: var(--odoo-text-secondary); margin-left: 4px; line-height: 1.45;">{{ resp.explanation }}</span>
         </div>
         {% endif %}
 
@@ -146,19 +160,21 @@
     </div>
   </div>
 
-  <!-- Footer Actions -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-    <a href="{{ url_for('learning_routes.learning_history') }}" class="btn btn-secondary">
-      &larr; Learning History
+  <!-- Bottom Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; flex-wrap: wrap; gap: 12px;">
+    <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Return to Dashboard</span>
     </a>
-    <div style="display: flex; gap: 12px;">
-      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-outline">
-        Create Another Quiz
-      </a>
-      <a href="{{ url_for('learning_routes.dashboard') }}" class="btn btn-primary">
-        Return to Dashboard &rarr;
-      </a>
-    </div>
+    <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      <span>Generate Another Quiz</span>
+    </a>
   </div>
 
 </div>

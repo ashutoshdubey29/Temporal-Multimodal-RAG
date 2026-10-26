@@ -62,7 +62,7 @@ def register_user(full_name: str, email: str, password: str, confirm_password: s
         return False, "An account with this email address already exists.", None
 
     try:
-        pw_hash = generate_password_hash(password, method="scrypt")
+        pw_hash = generate_password_hash(password)
         user = User(
             full_name=full_name,
             email=email,
@@ -90,7 +90,7 @@ def register_user(full_name: str, email: str, password: str, confirm_password: s
     except Exception as e:
         db.session.rollback()
         logger.exception("Failed to register user: %s", e)
-        return False, "Registration failed due to a system error. Please try again.", None
+        return False, f"Registration failed: {str(e)}", None
 
 
 def authenticate_user(email: str, password: str) -> tuple[bool, str, User | None]:
@@ -131,14 +131,22 @@ def get_current_user() -> User | None:
         user_id = None
     if not user_id:
         return None
-    return User.query.get(user_id)
+    try:
+        return db.session.get(User, user_id)
+    except Exception:
+        return None
 
 
 def login_required(f):
-    """Decorator ensuring that only authenticated users can access the endpoint."""
+    """Decorator ensuring that only authenticated users with valid DB records can access the endpoint."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get("user_id"):
+        user = get_current_user()
+        if not user:
+            # Clear invalid/stale session credentials to prevent 500 errors on subsequent requests
+            session.pop("user_id", None)
+            session.pop("user_name", None)
+            session.pop("user_email", None)
             is_json = request.is_json or request.headers.get("Accept") == "application/json"
             if is_json:
                 return jsonify({

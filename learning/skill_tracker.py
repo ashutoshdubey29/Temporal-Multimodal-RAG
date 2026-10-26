@@ -49,7 +49,7 @@ def update_skills_from_attempt(user_id: int, attempt_id: int) -> List[UserSkill]
       - Calculates confidence score based on sample size
       - Tracks trend (improving, declining, stable)
     """
-    attempt = QuizAttempt.query.get(attempt_id)
+    attempt = db.session.get(QuizAttempt, attempt_id)
     if not attempt or attempt.user_id != user_id:
         logger.warning("Attempt %s not found or does not belong to user %s", attempt_id, user_id)
         return []
@@ -167,7 +167,7 @@ def generate_post_quiz_recommendations(user_id: int, attempt_id: int) -> Dict[st
       - Recommended next quiz topic and difficulty
       - Explicit explanations citing empirical quiz accuracy
     """
-    attempt = QuizAttempt.query.get(attempt_id)
+    attempt = db.session.get(QuizAttempt, attempt_id)
     if not attempt or attempt.user_id != user_id:
         return {}
 

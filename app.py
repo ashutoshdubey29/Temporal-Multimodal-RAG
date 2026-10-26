@@ -19,6 +19,23 @@ logger = logging.getLogger("app")
 
 ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".mp3", ".wav", ".m4a"}
 
+# Load local environment configuration (.env)
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip("'\"")
+                if k and k not in os.environ:
+                    os.environ[k] = v
+    except Exception:
+        pass
+
 app = Flask(__name__)
 # Use deterministic development secret or secure environment secret
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "temporal-rag-session-secret-key-2026"
@@ -40,9 +57,27 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db_path = os.path.join(BASE_DIR, "learning_platform.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "connect_args": {"timeout": 30},
+}
 
 from models.database import init_db, db, VideoLearningSession
+from sqlalchemy import event
 init_db(app)
+
+with app.app_context():
+    try:
+        @event.listens_for(db.engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            try:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=30000")
+                cursor.close()
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 from routes.auth_routes import auth_bp
 from routes.learning_routes import learning_bp
@@ -647,6 +682,35 @@ def get_server_config():
     debug_val = os.environ.get("FLASK_DEBUG", "false").strip().lower()
     debug = debug_val in ("true", "1", "yes")
     return host, port, debug
+
+
+# =====================================
+# SYSTEM ERROR HANDLERS
+# =====================================
+
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    logger.exception("Internal server error caught: %s", e)
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify({
+            "success": False,
+            "error": "A system error occurred. Please try again or return to the dashboard.",
+            "error_code": "INTERNAL_SERVER_ERROR"
+        }), 500
+    from flask import flash
+    flash("A system error occurred while processing your request. Please try again.", "danger")
+    return render_template("base.html"), 500
+
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify({
+            "success": False,
+            "error": "Requested resource not found.",
+            "error_code": "NOT_FOUND"
+        }), 404
+    return render_template("base.html"), 404
 
 
 if __name__ == "__main__":

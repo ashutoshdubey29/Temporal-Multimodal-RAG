@@ -10,251 +10,342 @@
   }
   .question-container.active {
     display: block;
-    animation: fadeIn 0.25s ease-in-out;
+    animation: fadeIn 0.18s ease-in-out;
   }
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
   .option-card {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 20px;
-    background-color: var(--bg-surface);
-    border: 2px solid var(--border-color);
+    padding: 14px 18px;
+    background-color: #FFFFFF;
+    border: 1px solid var(--odoo-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: var(--transition);
+    transition: all var(--transition-fast);
     user-select: none;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .option-card:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    background-color: var(--bg-surface-hover);
+    border-color: var(--odoo-border-hover);
+    background-color: var(--odoo-lavender-pale);
   }
   .option-card.selected {
-    border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--odoo-purple-primary);
+    background-color: var(--odoo-purple-light);
   }
-  .option-letter {
+
+  .option-indicator {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background-color: var(--odoo-bg-main);
+    border: 1px solid var(--odoo-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--odoo-text-secondary);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+  .option-card.selected .option-indicator {
+    background-color: var(--odoo-purple-primary);
+    border-color: var(--odoo-purple-primary);
+    color: #FFFFFF;
+  }
+
+  .option-text {
+    font-size: 14px;
+    color: var(--odoo-text-primary);
+    line-height: 1.45;
+  }
+
+  .question-nav-pill {
     width: 32px;
     height: 32px;
-    border-radius: var(--radius-full);
-    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--text-main);
-    transition: var(--transition);
-  }
-  .option-card.selected .option-letter {
-    background-color: var(--primary);
-    color: #fff;
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-  }
-  .nav-pill {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    transition: var(--transition);
+    background-color: #FFFFFF;
+    border: 1px solid var(--odoo-border);
+    color: var(--odoo-text-secondary);
+    transition: all var(--transition-fast);
   }
-  .nav-pill:hover {
-    border-color: var(--primary);
-    color: var(--text-main);
+  .question-nav-pill:hover {
+    border-color: var(--odoo-purple-primary);
+    color: var(--odoo-purple-primary);
   }
-  .nav-pill.active {
-    border-color: var(--primary);
-    background-color: rgba(99, 102, 241, 0.2);
-    color: var(--primary);
+  .question-nav-pill.active {
+    border-color: var(--odoo-purple-primary);
+    background-color: var(--odoo-purple-light);
+    color: var(--odoo-purple-primary);
   }
-  .nav-pill.answered {
-    background-color: var(--accent-emerald);
-    color: #fff;
-    border-color: var(--accent-emerald);
+  .question-nav-pill.answered {
+    background-color: var(--odoo-success-bg);
+    color: var(--odoo-success);
+    border-color: rgba(33, 134, 91, 0.3);
+  }
+
+  /* Submit Confirmation Modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(37, 35, 42, 0.45);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open {
+    display: flex;
+  }
+  .modal-window {
+    background-color: #FFFFFF;
+    border: 1px solid var(--odoo-border);
+    border-radius: var(--radius-md);
+    max-width: 440px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: var(--shadow-lg);
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 860px; margin: 20px auto;">
+<div style="max-width: 860px; margin: 20px auto 60px;">
 
   <!-- Header Tracker -->
-  <div class="card" style="margin-bottom: 24px; padding: 18px 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <div>
+  <div class="card" style="margin-bottom: 20px; padding: 18px 24px; border: 1px solid var(--odoo-border);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
         <span class="badge badge-primary">{{ quiz.difficulty.capitalize() }}</span>
-        <span class="badge badge-secondary" style="margin-left: 6px;">{{ quiz.source_type.capitalize() }} Source</span>
-        <span id="questionCounter" style="margin-left: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+        <span class="badge badge-secondary">{{ quiz.source_type.capitalize() }}</span>
+        <span id="questionCounter" style="font-size: 13px; font-weight: 600; color: var(--odoo-text-secondary); margin-left: 6px;">
           Question 1 of {{ questions|length }}
         </span>
       </div>
-      <div id="progressText" style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">0% Answered</div>
-    </div>
 
-    <!-- Progress bar -->
-    <div class="progress-bar-container" style="height: 6px; margin: 0 0 16px 0;">
-      <div class="progress-bar-fill" id="quizProgressBar" style="width: 0%;"></div>
-    </div>
-
-    <!-- Question Navigator Pills -->
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="pillsContainer">
-      {% for q in questions %}
-      <div class="nav-pill {% if loop.first %}active{% endif %}" id="pill_{{ loop.index0 }}" onclick="goToQuestion({{ loop.index0 }})">
-        {{ loop.index }}
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--odoo-text-muted);">
+        <span id="answeredCount">0</span> of {{ questions|length }} answered
       </div>
-      {% endfor %}
+    </div>
+
+    <!-- Thin Purple Progress Bar -->
+    <div class="progress-bar-container" style="height: 6px; margin: 0;">
+      <div class="progress-bar-fill" id="quizProgressBar" style="width: 0%;"></div>
     </div>
   </div>
 
-  <!-- Form for submission -->
+  <!-- Main Quiz Card -->
   <form id="quizForm" method="POST" action="{{ url_for('learning_routes.submit_quiz', quiz_id=quiz.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
     {% for q in questions %}
-    <div class="card question-container {% if loop.first %}active{% endif %}" id="questionCard_{{ loop.index0 }}" style="padding: 32px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <span class="badge badge-primary">Topic: {{ q.topic }}</span>
-        {% if q.source_start is not none %}
-        <span style="font-size: 0.75rem; color: var(--text-dim);">
-          ⏱️ Video source: {{ '%02d:%02d' % (q.source_start // 60, q.source_start % 60) }}
-        </span>
-        {% endif %}
-      </div>
-
-      <h3 style="font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-bottom: 24px;">
-        {{ loop.index }}. {{ q.question }}
-      </h3>
-
-      <div class="options-group">
-        {% for letter in ['A', 'B', 'C', 'D'] %}
-        {% set opt_text = q.options.get(letter, '') %}
-        <div class="option-card" id="optCard_{{ q.id }}_{{ letter }}" onclick="selectOption('{{ q.id }}', '{{ letter }}', {{ loop.parent.loop.index0 }})">
-          <input type="radio" name="q_{{ q.id }}" id="radio_{{ q.id }}_{{ letter }}" value="{{ letter }}" style="display: none;">
-          <div class="option-letter">{{ letter }}</div>
-          <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-main); flex: 1;">
-            {{ opt_text }}
-          </div>
+    {% set q_idx = loop.index %}
+    <div class="question-container {% if loop.first %}active{% endif %}" id="q_pane_{{ q_idx }}" data-qid="{{ q.id }}">
+      <div class="card" style="padding: 28px 26px; border: 1px solid var(--odoo-border); margin-bottom: 20px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px;">
+          <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-purple-primary);">
+            Question {{ q_idx }} &bull; Topic: {{ q.topic }}
+          </span>
+          {% if q.source_start is not none %}
+          <span class="badge badge-secondary" style="font-size: 11px;">
+            Timestamp: {{ q.source_start|int }}s
+          </span>
+          {% endif %}
         </div>
-        {% endfor %}
+
+        <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.5; color: var(--odoo-text-primary); margin-bottom: 22px;">
+          {{ q.question_text }}
+        </h3>
+
+        <!-- 4 Options -->
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          {% for letter, text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+          <label class="option-card" id="opt_label_{{ q.id }}_{{ letter }}">
+            <input type="radio" name="q_{{ q.id }}" value="{{ letter }}" style="display: none;" onchange="handleOptionSelected('{{ q_idx }}', '{{ q.id }}', '{{ letter }}')">
+            <span class="option-indicator">{{ letter }}</span>
+            <span class="option-text">{{ text }}</span>
+          </label>
+          {% endfor %}
+        </div>
+
       </div>
     </div>
     {% endfor %}
 
-    <!-- Navigation Controls -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
-      <button type="button" class="btn btn-secondary btn-lg" id="prevBtn" onclick="prevQuestion()" disabled>
-        &larr; Previous
-      </button>
-
-      <div style="display: flex; gap: 12px;">
-        <button type="button" class="btn btn-outline btn-lg" id="nextBtn" onclick="nextQuestion()">
-          Next Question &rarr;
+    <!-- Footer Controls & Question Navigator -->
+    <div class="card" style="padding: 16px 20px; border: 1px solid var(--odoo-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      
+      <!-- Back / Next Buttons -->
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="prevBtn" onclick="navigateQuestion(-1)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Previous</span>
         </button>
-
-        <button type="button" class="btn btn-primary btn-lg" id="submitConfirmBtn" onclick="confirmSubmit()">
-          Submit Quiz ✓
+        <button type="button" class="btn btn-secondary btn-sm" id="nextBtn" onclick="navigateQuestion(1)">
+          <span>Next</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </button>
       </div>
+
+      <!-- Quick Nav Pills -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        {% for q in questions %}
+        <div class="question-nav-pill {% if loop.first %}active{% endif %}" id="pill_{{ loop.index }}" onclick="showQuestion({{ loop.index }})">
+          {{ loop.index }}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Submit Trigger Button -->
+      <div>
+        <button type="button" class="btn btn-primary" onclick="openSubmitModal()">
+          <span>Submit Answers</span>
+        </button>
+      </div>
+
     </div>
+
   </form>
 
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Submission Confirmation Dialog -->
+<div class="modal-backdrop" id="submitModal">
+  <div class="modal-window">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+      <div style="width: 38px; height: 38px; border-radius: var(--radius-sm); background-color: var(--odoo-purple-light); color: var(--odoo-purple-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+      </div>
+      <div>
+        <h3 style="font-size: 16px; font-weight: 600; color: var(--odoo-text-primary);">Submit Assessment?</h3>
+        <p style="font-size: 13px; color: var(--odoo-text-secondary); margin-top: 2px;">Review your answers before finalizing.</p>
+      </div>
+    </div>
+
+    <div style="background-color: var(--odoo-lavender-pale); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--odoo-border); margin: 16px 0; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span style="color: var(--odoo-text-secondary);">Total Questions:</span>
+        <strong style="color: var(--odoo-text-primary);">{{ questions|length }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--odoo-text-secondary);">Answered:</span>
+        <strong id="modalAnsweredCount" style="color: var(--odoo-purple-primary);">0</strong>
+      </div>
+    </div>
+
+    <p id="unansweredWarning" style="font-size: 12.5px; color: var(--odoo-warning); display: none; margin-bottom: 16px;">
+      Note: You have unanswered questions. They will be marked as 0 points.
+    </p>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+      <button type="button" class="btn btn-secondary" onclick="closeSubmitModal()">Review Questions</button>
+      <button type="button" class="btn btn-primary" onclick="confirmSubmit()">Confirm & Submit</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const totalQuestions = {{ questions|length }};
-  let currentIndex = 0;
-  const answeredSet = new Set();
+  const totalQuestions = parseInt('{{ questions|length }}', 10);
+  let currentIdx = 1;
+  const answers = {};
 
-  function updateView() {
-    // Hide all question cards
-    for (let i = 0; i < totalQuestions; i++) {
-      const card = document.getElementById(`questionCard_${i}`);
-      const pill = document.getElementById(`pill_${i}`);
-      if (card) card.classList.toggle('active', i === currentIndex);
-      if (pill) {
-        pill.classList.toggle('active', i === currentIndex);
-        pill.classList.toggle('answered', answeredSet.has(i));
-      }
-    }
+  function showQuestion(idx) {
+    if (idx < 1 || idx > totalQuestions) return;
+    currentIdx = idx;
 
-    // Update Counter & Progress
-    document.getElementById('questionCounter').textContent = `Question ${currentIndex + 1} of ${totalQuestions}`;
-    const pct = Math.round((answeredSet.size / totalQuestions) * 100);
-    document.getElementById('quizProgressBar').style.width = `${pct}%`;
-    document.getElementById('progressText').textContent = `${pct}% Answered (${answeredSet.size}/${totalQuestions})`;
+    document.querySelectorAll('.question-container').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById('q_pane_' + idx);
+    if (target) target.classList.add('active');
 
-    // Prev / Next button state
-    document.getElementById('prevBtn').disabled = (currentIndex === 0);
-    const nextBtn = document.getElementById('nextBtn');
-    if (currentIndex === totalQuestions - 1) {
-      nextBtn.style.display = 'none';
-    } else {
-      nextBtn.style.display = 'inline-flex';
-    }
+    document.querySelectorAll('.question-nav-pill').forEach(el => el.classList.remove('active'));
+    const pill = document.getElementById('pill_' + idx);
+    if (pill) pill.classList.add('active');
+
+    document.getElementById('questionCounter').textContent = `Question ${idx} of ${totalQuestions}`;
+
+    document.getElementById('prevBtn').disabled = (idx === 1);
+    document.getElementById('nextBtn').disabled = (idx === totalQuestions);
   }
 
-  function selectOption(questionId, letter, qIndex) {
-    // Unselect other option cards for this question
+  function navigateQuestion(delta) {
+    showQuestion(currentIdx + delta);
+  }
+
+  function handleOptionSelected(qIndex, qId, letter) {
+    answers[qId] = letter;
+
+    // Highlight selected card
     ['A', 'B', 'C', 'D'].forEach(l => {
-      const card = document.getElementById(`optCard_${questionId}_${l}`);
-      if (card) card.classList.remove('selected');
+      const label = document.getElementById(`opt_label_${qId}_${l}`);
+      if (label) label.classList.toggle('selected', l === letter);
     });
 
-    // Select chosen card
-    const targetCard = document.getElementById(`optCard_${questionId}_${letter}`);
-    const targetRadio = document.getElementById(`radio_${questionId}_${letter}`);
-    if (targetCard && targetRadio) {
-      targetCard.classList.add('selected');
-      targetRadio.checked = true;
-      answeredSet.add(qIndex);
-      updateView();
-    }
+    // Mark pill as answered
+    const pill = document.getElementById('pill_' + qIndex);
+    if (pill) pill.classList.add('answered');
+
+    updateProgress();
   }
 
-  function goToQuestion(idx) {
-    if (idx >= 0 && idx < totalQuestions) {
-      currentIndex = idx;
-      updateView();
-    }
+  function updateProgress() {
+    const answeredTotal = Object.keys(answers).length;
+    document.getElementById('answeredCount').textContent = answeredTotal;
+    const pct = Math.round((answeredTotal / totalQuestions) * 100);
+    document.getElementById('quizProgressBar').style.width = pct + '%';
   }
 
-  function nextQuestion() {
-    if (currentIndex < totalQuestions - 1) {
-      currentIndex++;
-      updateView();
+  function openSubmitModal() {
+    const answeredTotal = Object.keys(answers).length;
+    document.getElementById('modalAnsweredCount').textContent = `${answeredTotal} / ${totalQuestions}`;
+    const warning = document.getElementById('unansweredWarning');
+    if (answeredTotal < totalQuestions) {
+      warning.style.display = 'block';
+    } else {
+      warning.style.display = 'none';
     }
+    document.getElementById('submitModal').classList.add('open');
   }
 
-  function prevQuestion() {
-    if (currentIndex > 0) {
-      currentIndex--;
-      updateView();
-    }
+  function closeSubmitModal() {
+    document.getElementById('submitModal').classList.remove('open');
   }
 
   function confirmSubmit() {
-    const unanswered = totalQuestions - answeredSet.size;
-    let msg = `Ready to submit your quiz?`;
-    if (unanswered > 0) {
-      msg = `You have ${unanswered} unanswered question(s). Are you sure you want to submit now?`;
-    }
-    if (confirm(msg)) {
-      document.getElementById('quizForm').submit();
-    }
+    document.getElementById('quizForm').submit();
   }
+
+  // Prevent accidental navigation
+  window.addEventListener('beforeunload', function(e) {
+    if (Object.keys(answers).length > 0 && !document.getElementById('quizForm').submitted) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+  document.getElementById('quizForm').addEventListener('submit', function() {
+    this.submitted = true;
+  });
 </script>
 {% endblock %}

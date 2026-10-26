@@ -6,60 +6,92 @@
   <title>{% block title %}AI Learning Platform{% endblock %} - Temporal Multimodal RAG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    /* ==========================================================================
+       ODOO-INSPIRED DESIGN SYSTEM TOKENS (Scoped to Learning & Auth shell)
+       ========================================================================== */
     :root {
-      --bg-primary: #0b0f19;
-      --bg-secondary: #111827;
-      --bg-surface: #1f2937;
-      --bg-surface-hover: #283548;
-      --bg-glass: rgba(17, 24, 39, 0.75);
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-focus: #6366f1;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      --accent-blue: #3b82f6;
-      --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
-      --accent-purple: #8b5cf6;
-      --sidebar-width: 260px;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
+      /* Color Palette */
+      --odoo-purple-primary: #714B67;
+      --odoo-purple-dark: #513548;
+      --odoo-purple-light: #F2EAF0;
+      --odoo-lavender-pale: #F8F5F8;
+      --odoo-bg-main: #F7F7F9;
+      --odoo-surface-card: #FFFFFF;
+      --odoo-text-primary: #25232A;
+      --odoo-text-secondary: #706B76;
+      --odoo-text-muted: #8E8994;
+      --odoo-border: #E7E3E9;
+      --odoo-border-hover: #D4CED7;
+      --odoo-success: #21865B;
+      --odoo-success-bg: #EAF5F0;
+      --odoo-warning: #B7791F;
+      --odoo-warning-bg: #FEF7EE;
+      --odoo-error: #C43D4B;
+      --odoo-error-bg: #FDF2F3;
+      --odoo-info: #3567B1;
+      --odoo-info-bg: #EEF4FC;
+
+      /* Typography Scale */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Dimensions & Spacing */
+      --sidebar-width: 254px;
+      --topbar-height: 60px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
       --radius-full: 9999px;
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* Subtle Shadows */
+      --shadow-xs: 0 1px 2px rgba(37, 35, 42, 0.04);
+      --shadow-sm: 0 1px 3px rgba(37, 35, 42, 0.06), 0 1px 2px rgba(37, 35, 42, 0.03);
+      --shadow-md: 0 4px 12px -2px rgba(37, 35, 42, 0.08), 0 2px 6px -1px rgba(37, 35, 42, 0.04);
+      --shadow-lg: 0 12px 24px -4px rgba(37, 35, 42, 0.1), 0 4px 8px -2px rgba(37, 35, 42, 0.04);
+
+      /* Motion */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    * {
+    /* Reset & Base Setup */
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-main);
+      font-family: var(--font-sans);
+      background-color: var(--odoo-bg-main);
+      color: var(--odoo-text-primary);
       min-height: 100vh;
       display: flex;
       line-height: 1.5;
+      font-size: 14px;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Layout */
+    a {
+      color: var(--odoo-purple-primary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+    a:hover {
+      color: var(--odoo-purple-dark);
+    }
+
+    /* ==========================================================================
+       SIDEBAR NAVIGATION
+       ========================================================================== */
     .app-sidebar {
       width: var(--sidebar-width);
-      background-color: var(--bg-secondary);
-      border-right: 1px solid var(--border-color);
+      background-color: var(--odoo-surface-card);
+      border-right: 1px solid var(--odoo-border);
       display: flex;
       flex-direction: column;
       position: fixed;
@@ -67,168 +99,216 @@
       bottom: 0;
       left: 0;
       z-index: 100;
-      transition: var(--transition);
+      transition: transform var(--transition-base);
     }
 
     .sidebar-brand {
-      padding: 24px 20px;
+      height: var(--topbar-height);
+      padding: 0 20px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--border-color);
+      gap: 10px;
+      border-bottom: 1px solid var(--odoo-border);
+      text-decoration: none;
     }
 
-    .brand-logo {
-      width: 38px;
-      height: 38px;
+    .brand-mark {
+      width: 32px;
+      height: 32px;
       border-radius: var(--radius-sm);
-      background: var(--primary-gradient);
+      background-color: var(--odoo-purple-primary);
+      color: #FFFFFF;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 1.25rem;
-      color: #fff;
-      box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      letter-spacing: -0.02em;
     }
 
-    .brand-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-main);
+    .brand-title-wrap {
+      display: flex;
+      flex-direction: column;
       line-height: 1.2;
     }
 
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--odoo-text-primary);
+    }
+
     .brand-subtitle {
-      font-size: 0.75rem;
-      color: var(--text-dim);
+      font-size: 11px;
+      color: var(--odoo-text-muted);
       font-weight: 500;
     }
 
     .sidebar-nav {
       flex: 1;
-      padding: 20px 12px;
+      padding: 16px 12px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
 
-    .nav-label {
-      font-size: 0.7rem;
+    .nav-section-label {
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-dim);
-      font-weight: 700;
-      padding: 12px 12px 6px;
+      letter-spacing: 0.06em;
+      color: var(--odoo-text-muted);
+      font-weight: 600;
+      padding: 14px 12px 6px;
+    }
+    .nav-section-label:first-child {
+      padding-top: 4px;
     }
 
-    .nav-link {
+    .nav-item {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--odoo-text-secondary);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 13.5px;
       font-weight: 500;
-      transition: var(--transition);
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+      position: relative;
     }
 
-    .nav-link:hover {
-      background-color: var(--bg-surface);
-      color: var(--text-main);
-      transform: translateX(2px);
+    .nav-item:hover {
+      background-color: var(--odoo-lavender-pale);
+      color: var(--odoo-text-primary);
     }
 
-    .nav-link.active {
-      background: rgba(99, 102, 241, 0.15);
-      color: var(--primary);
+    .nav-item.active {
+      background-color: var(--odoo-purple-light);
+      color: var(--odoo-purple-primary);
       font-weight: 600;
-      border-left: 3px solid var(--primary);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3.5px;
+      border-radius: 0 4px 4px 0;
+      background-color: var(--odoo-purple-primary);
     }
 
     .nav-icon {
-      font-size: 1.15rem;
+      width: 18px;
+      height: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 22px;
+      color: var(--odoo-text-muted);
+      flex-shrink: 0;
+      transition: color var(--transition-fast);
+    }
+
+    .nav-item:hover .nav-icon {
+      color: var(--odoo-text-secondary);
+    }
+
+    .nav-item.active .nav-icon {
+      color: var(--odoo-purple-primary);
+    }
+
+    .nav-badge-pill {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+      background-color: var(--odoo-lavender-pale);
+      color: var(--odoo-purple-primary);
+      font-weight: 600;
+      border: 1px solid var(--odoo-border);
     }
 
     .sidebar-footer {
-      padding: 16px;
-      border-top: 1px solid var(--border-color);
-      background-color: rgba(11, 15, 25, 0.5);
+      padding: 12px;
+      border-top: 1px solid var(--odoo-border);
+      background-color: #FAFAFC;
     }
 
     .user-profile-widget {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px;
-      border-radius: var(--radius-sm);
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
       text-decoration: none;
-      color: var(--text-main);
-      transition: var(--transition);
+      color: var(--odoo-text-primary);
+      transition: background-color var(--transition-fast);
     }
 
     .user-profile-widget:hover {
-      background-color: var(--bg-surface);
+      background-color: var(--odoo-lavender-pale);
     }
 
-    .avatar {
-      width: 36px;
-      height: 36px;
+    .user-avatar {
+      width: 34px;
+      height: 34px;
       border-radius: var(--radius-full);
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      background-color: var(--odoo-purple-light);
+      color: var(--odoo-purple-primary);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 0.9rem;
-      color: #fff;
+      font-size: 13px;
+      border: 1px solid var(--odoo-border);
+      flex-shrink: 0;
     }
 
-    .user-info {
+    .user-details {
       flex: 1;
       min-width: 0;
     }
 
-    .user-name {
-      font-size: 0.85rem;
+    .user-name-text {
+      font-size: 13px;
       font-weight: 600;
+      color: var(--odoo-text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.3;
     }
 
-    .user-email {
-      font-size: 0.72rem;
-      color: var(--text-dim);
+    .user-email-text {
+      font-size: 11.5px;
+      color: var(--odoo-text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
     }
 
-    /* Main Content Area */
+    /* ==========================================================================
+       MAIN APPLICATION LAYOUT & TOPBAR
+       ========================================================================== */
     .app-main {
       margin-left: var(--sidebar-width);
       flex: 1;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      background-color: var(--bg-primary);
+      background-color: var(--odoo-bg-main);
     }
 
     .app-topbar {
-      height: 64px;
-      border-bottom: 1px solid var(--border-color);
-      background-color: var(--bg-glass);
-      backdrop-filter: blur(12px);
+      height: var(--topbar-height);
+      background-color: var(--odoo-surface-card);
+      border-bottom: 1px solid var(--odoo-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -238,223 +318,322 @@
       z-index: 90;
     }
 
-    .topbar-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .topbar-actions {
+    .topbar-left {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
+    .topbar-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--odoo-text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .topbar-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--odoo-text-muted);
+    }
+    .topbar-breadcrumb a {
+      color: var(--odoo-text-muted);
+    }
+    .topbar-breadcrumb a:hover {
+      color: var(--odoo-purple-primary);
+    }
+    .topbar-breadcrumb-separator {
+      color: var(--odoo-border-hover);
+    }
+    .topbar-breadcrumb-current {
+      color: var(--odoo-text-primary);
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .app-content {
       flex: 1;
-      padding: 32px;
-      max-width: 1400px;
+      padding: 28px 32px;
+      max-width: 1360px;
       width: 100%;
       margin: 0 auto;
     }
 
-    /* Cards & Components */
+    /* ==========================================================================
+       CARDS & SURFACES
+       ========================================================================== */
     .card {
-      background-color: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background-color: var(--odoo-surface-card);
+      border: 1px solid var(--odoo-border);
       border-radius: var(--radius-md);
-      padding: 24px;
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition);
+      padding: 22px;
+      box-shadow: var(--shadow-xs);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     }
 
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.12);
+      border-color: var(--odoo-border-hover);
     }
 
     .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .card-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-main);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--odoo-text-primary);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .card-subtitle {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 4px;
+      font-size: 12.5px;
+      color: var(--odoo-text-secondary);
+      margin-top: 2px;
+      font-weight: 400;
     }
 
-    /* Buttons */
+    /* ==========================================================================
+       BUTTONS
+       ========================================================================== */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 18px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      border-radius: var(--radius-sm);
+      gap: 7px;
+      padding: 8px 16px;
+      font-size: 13.5px;
+      font-weight: 500;
+      font-family: inherit;
+      border-radius: 8px;
       border: 1px solid transparent;
       cursor: pointer;
       text-decoration: none;
-      transition: var(--transition);
-      line-height: 1;
+      line-height: 1.4;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--odoo-purple-primary);
+      outline-offset: 2px;
     }
 
     .btn-primary {
-      background: var(--primary-gradient);
-      color: #fff;
-      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+      background-color: var(--odoo-purple-primary);
+      color: #FFFFFF !important;
+      border-color: var(--odoo-purple-primary);
+      box-shadow: var(--shadow-xs);
     }
 
     .btn-primary:hover {
-      opacity: 0.95;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+      background-color: var(--odoo-purple-dark);
+      border-color: var(--odoo-purple-dark);
+    }
+
+    .btn-primary:active {
+      background-color: #42293A;
+      transform: translateY(1px);
     }
 
     .btn-secondary {
-      background-color: var(--bg-surface);
-      color: var(--text-main);
-      border-color: var(--border-color);
+      background-color: #FFFFFF;
+      color: var(--odoo-text-primary) !important;
+      border-color: var(--odoo-border);
+      box-shadow: var(--shadow-xs);
     }
 
     .btn-secondary:hover {
-      background-color: var(--bg-surface-hover);
-      border-color: rgba(255, 255, 255, 0.15);
+      background-color: var(--odoo-lavender-pale);
+      border-color: var(--odoo-border-hover);
     }
 
     .btn-outline {
       background-color: transparent;
-      color: var(--text-main);
-      border-color: var(--border-color);
+      color: var(--odoo-purple-primary) !important;
+      border-color: var(--odoo-border);
     }
 
     .btn-outline:hover {
-      background-color: var(--bg-surface);
-      border-color: var(--text-dim);
+      background-color: var(--odoo-purple-light);
+      border-color: var(--odoo-purple-primary);
     }
 
     .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.8rem;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      border-radius: 6px;
+      gap: 5px;
     }
 
     .btn-lg {
-      padding: 14px 24px;
-      font-size: 1rem;
+      padding: 10px 20px;
+      font-size: 14.5px;
+      border-radius: 8px;
     }
 
     .btn-danger {
-      background-color: rgba(244, 63, 94, 0.15);
-      color: var(--accent-rose);
-      border-color: rgba(244, 63, 94, 0.3);
+      background-color: #FFFFFF;
+      color: var(--odoo-error) !important;
+      border-color: #F8D7DA;
     }
 
     .btn-danger:hover {
-      background-color: var(--accent-rose);
-      color: #fff;
+      background-color: var(--odoo-error-bg);
+      border-color: var(--odoo-error);
     }
 
-    /* Badges */
+    /* ==========================================================================
+       BADGES & STATUS LABELS
+       ========================================================================== */
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 4px 10px;
+      gap: 5px;
+      padding: 3px 9px;
       border-radius: var(--radius-full);
-      font-size: 0.75rem;
-      font-weight: 600;
-      line-height: 1;
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.3;
+      border: 1px solid transparent;
+      white-space: nowrap;
     }
 
-    .badge-primary { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-    .badge-danger { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
-    .badge-secondary { background: var(--bg-surface); color: var(--text-muted); }
+    .badge-primary {
+      background-color: var(--odoo-purple-light);
+      color: var(--odoo-purple-primary);
+      border-color: rgba(113, 75, 103, 0.2);
+    }
 
-    /* Form Controls */
+    .badge-success {
+      background-color: var(--odoo-success-bg);
+      color: var(--odoo-success);
+      border-color: rgba(33, 134, 91, 0.2);
+    }
+
+    .badge-warning {
+      background-color: var(--odoo-warning-bg);
+      color: var(--odoo-warning);
+      border-color: rgba(183, 121, 31, 0.2);
+    }
+
+    .badge-danger {
+      background-color: var(--odoo-error-bg);
+      color: var(--odoo-error);
+      border-color: rgba(196, 61, 75, 0.2);
+    }
+
+    .badge-secondary {
+      background-color: var(--odoo-lavender-pale);
+      color: var(--odoo-text-secondary);
+      border-color: var(--odoo-border);
+    }
+
+    /* ==========================================================================
+       FORM CONTROLS
+       ========================================================================== */
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .form-label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 13px;
       font-weight: 600;
-      color: var(--text-main);
-      margin-bottom: 8px;
+      color: var(--odoo-text-primary);
+      margin-bottom: 6px;
     }
 
     .form-input, .form-select, .form-textarea {
       width: 100%;
-      padding: 10px 14px;
-      background-color: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
-      color: var(--text-main);
-      font-size: 0.9rem;
+      padding: 9px 12px;
+      background-color: #FFFFFF;
+      border: 1px solid var(--odoo-border);
+      border-radius: 8px;
+      color: var(--odoo-text-primary);
+      font-size: 13.5px;
       font-family: inherit;
-      transition: var(--transition);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      box-shadow: inset 0 1px 2px rgba(37, 35, 42, 0.02);
+    }
+
+    .form-input::placeholder, .form-textarea::placeholder {
+      color: var(--odoo-text-muted);
     }
 
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      border-color: var(--odoo-purple-primary);
+      box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12);
     }
 
     .form-helper {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-top: 6px;
+      font-size: 12px;
+      color: var(--odoo-text-secondary);
+      margin-top: 5px;
+      line-height: 1.4;
     }
 
-    /* Alerts */
+    /* ==========================================================================
+       ALERTS & NOTICES
+       ========================================================================== */
     .alert {
-      padding: 14px 18px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 24px;
-      font-size: 0.875rem;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 13.5px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      border: 1px solid transparent;
+      line-height: 1.4;
     }
 
     .alert-success {
-      background-color: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
+      background-color: var(--odoo-success-bg);
+      border-color: rgba(33, 134, 91, 0.25);
+      color: var(--odoo-success);
     }
 
     .alert-danger {
-      background-color: rgba(244, 63, 94, 0.12);
-      border: 1px solid rgba(244, 63, 94, 0.3);
-      color: #fb7185;
+      background-color: var(--odoo-error-bg);
+      border-color: rgba(196, 61, 75, 0.25);
+      color: var(--odoo-error);
     }
 
     .alert-info {
-      background-color: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
+      background-color: var(--odoo-info-bg);
+      border-color: rgba(53, 103, 177, 0.25);
+      color: var(--odoo-info);
     }
 
-    /* Progress bar */
+    .alert-warning {
+      background-color: var(--odoo-warning-bg);
+      border-color: rgba(183, 121, 31, 0.25);
+      color: var(--odoo-warning);
+    }
+
+    /* ==========================================================================
+       PROGRESS BARS
+       ========================================================================== */
     .progress-bar-container {
       width: 100%;
-      height: 8px;
-      background-color: var(--bg-surface);
+      height: 7px;
+      background-color: var(--odoo-purple-light);
       border-radius: var(--radius-full);
       overflow: hidden;
       margin: 8px 0;
@@ -462,129 +641,248 @@
 
     .progress-bar-fill {
       height: 100%;
-      background: var(--primary-gradient);
+      background-color: var(--odoo-purple-primary);
       border-radius: var(--radius-full);
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Empty state */
+    /* ==========================================================================
+       EMPTY STATES
+       ========================================================================== */
     .empty-state {
       text-align: center;
-      padding: 48px 24px;
-      color: var(--text-muted);
+      padding: 40px 20px;
+      color: var(--odoo-text-secondary);
     }
 
     .empty-state-icon {
-      font-size: 2.5rem;
-      margin-bottom: 16px;
-      opacity: 0.8;
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 12px;
+      color: var(--odoo-purple-primary);
+      opacity: 0.85;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .empty-state-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--odoo-text-primary);
+      margin-bottom: 4px;
     }
 
     .empty-state-desc {
-      font-size: 0.875rem;
-      max-width: 440px;
-      margin: 0 auto 20px;
-      color: var(--text-dim);
+      font-size: 13px;
+      max-width: 420px;
+      margin: 0 auto 18px;
+      color: var(--odoo-text-secondary);
+      line-height: 1.45;
     }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      .app-sidebar {
-        transform: translateX(-100%);
-      }
-      .app-sidebar.open {
-        transform: translateX(0);
-      }
-      .app-main {
-        margin-left: 0;
-      }
-      .app-content {
-        padding: 20px 16px;
-      }
-      .menu-toggle {
-        display: block !important;
-      }
+    /* ==========================================================================
+       RESPONSIVE & MOBILE DRAWER
+       ========================================================================== */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(37, 35, 42, 0.4);
+      z-index: 95;
+      backdrop-filter: blur(2px);
     }
 
     .menu-toggle {
       display: none;
       background: transparent;
-      border: none;
-      color: var(--text-main);
-      font-size: 1.4rem;
+      border: 1px solid var(--odoo-border);
+      border-radius: 6px;
+      color: var(--odoo-text-primary);
       cursor: pointer;
-      padding: 4px;
+      padding: 6px 9px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 900px) {
+      .app-sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-lg);
+      }
+      .app-sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-overlay.open {
+        display: block;
+      }
+      .app-main {
+        margin-left: 0;
+      }
+      .app-topbar {
+        padding: 0 16px;
+      }
+      .app-content {
+        padding: 20px 16px;
+      }
+      .menu-toggle {
+        display: inline-flex !important;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 
+  <!-- Mobile Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
   <!-- Sidebar -->
   <aside class="app-sidebar" id="appSidebar">
-    <div class="sidebar-brand">
-      <div class="brand-logo">&#x1D49F;</div>
-      <div>
-        <div class="brand-title">AetherLearn AI</div>
-        <div class="brand-subtitle">Multimodal Learning OS</div>
+    <a href="{{ url_for('learning_routes.dashboard') if session.get('user_id') else url_for('home') }}" class="sidebar-brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5"></path>
+          <path d="M2 12l10 5 10-5"></path>
+        </svg>
       </div>
-    </div>
+      <div class="brand-title-wrap">
+        <div class="brand-title">Temporal Learning</div>
+        <div class="brand-subtitle">Personalized AI Academy</div>
+      </div>
+    </a>
 
     <nav class="sidebar-nav">
-      <div class="nav-label">Core Learning</div>
-      <a href="{{ url_for('learning_routes.dashboard') }}" class="nav-link {% if request.endpoint == 'learning_routes.dashboard' %}active{% endif %}">
-        <span class="nav-icon">📊</span> Dashboard
-      </a>
-      <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint == 'home' %}active{% endif %}">
-        <span class="nav-icon">🎥</span> Learn with Video
-      </a>
-      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="nav-link {% if 'quiz' in request.endpoint and request.endpoint != 'learning_routes.dashboard' %}active{% endif %}">
-        <span class="nav-icon">⚡</span> AI Quiz Generator
-      </a>
-
-      <div class="nav-label">Personalization</div>
-      <a href="{{ url_for('learning_routes.learning_path_view') }}" class="nav-link {% if request.endpoint == 'learning_routes.learning_path_view' %}active{% endif %}">
-        <span class="nav-icon">🗺️</span> My Learning Path
-      </a>
-      <a href="{{ url_for('learning_routes.skills_overview') }}" class="nav-link {% if request.endpoint == 'learning_routes.skills_overview' %}active{% endif %}">
-        <span class="nav-icon">🎯</span> My Skills
-      </a>
-      <a href="{{ url_for('learning_routes.courses_view') }}" class="nav-link {% if request.endpoint == 'learning_routes.courses_view' %}active{% endif %}">
-        <span class="nav-icon">📚</span> My Courses
-      </a>
-      <a href="{{ url_for('learning_routes.learning_history') }}" class="nav-link {% if request.endpoint == 'learning_routes.learning_history' %}active{% endif %}">
-        <span class="nav-icon">⏱️</span> Learning History
+      <div class="nav-section-label">Core Learning</div>
+      <a href="{{ url_for('learning_routes.dashboard') }}" class="nav-item {% if request.endpoint == 'learning_routes.dashboard' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+            <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+            <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+          </svg>
+        </span>
+        <span>Dashboard</span>
       </a>
 
-      <div class="nav-label">Account</div>
-      <a href="{{ url_for('auth_routes.profile') }}" class="nav-link {% if request.endpoint == 'auth_routes.profile' %}active{% endif %}">
-        <span class="nav-icon">⚙️</span> Profile & Settings
+      <a href="{{ url_for('home') }}" class="nav-item {% if request.endpoint == 'home' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+        </span>
+        <span>Learn with Video</span>
       </a>
+
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="nav-item {% if 'quiz' in request.endpoint and request.endpoint != 'learning_routes.dashboard' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </span>
+        <span>AI Quiz Generator</span>
+      </a>
+
+      <div class="nav-section-label">My Academics</div>
+      <a href="{{ url_for('learning_routes.courses_view') }}" class="nav-item {% if request.endpoint == 'learning_routes.courses_view' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </span>
+        <span>My Courses</span>
+      </a>
+
+      <a href="{{ url_for('learning_routes.learning_path_view') }}" class="nav-item {% if request.endpoint == 'learning_routes.learning_path_view' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+          </svg>
+        </span>
+        <span>My Learning Path</span>
+      </a>
+
+      <a href="{{ url_for('learning_routes.skills_overview') }}" class="nav-item {% if request.endpoint == 'learning_routes.skills_overview' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+        </span>
+        <span>My Skills</span>
+      </a>
+
+      <a href="{{ url_for('learning_routes.learning_history') }}" class="nav-item {% if request.endpoint == 'learning_routes.learning_history' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <span>Learning History</span>
+      </a>
+
+      <div class="nav-section-label">Account</div>
+      <a href="{{ url_for('auth_routes.profile') }}" class="nav-item {% if request.endpoint == 'auth_routes.profile' %}active{% endif %}">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </span>
+        <span>Profile & Settings</span>
+      </a>
+
       {% if session.get('user_id') %}
-      <a href="{{ url_for('auth_routes.logout') }}" class="nav-link" style="color: var(--accent-rose);">
-        <span class="nav-icon">🚪</span> Logout
+      <a href="{{ url_for('auth_routes.logout') }}" class="nav-item" style="color: var(--odoo-error);">
+        <span class="nav-icon" style="color: var(--odoo-error);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </span>
+        <span>Logout</span>
       </a>
       {% else %}
-      <a href="{{ url_for('auth_routes.login') }}" class="nav-link">
-        <span class="nav-icon">🔑</span> Login / Register
+      <a href="{{ url_for('auth_routes.login') }}" class="nav-item">
+        <span class="nav-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+            <polyline points="10 17 15 12 10 7"></polyline>
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+          </svg>
+        </span>
+        <span>Login / Register</span>
       </a>
       {% endif %}
     </nav>
 
     {% if session.get('user_id') and current_user %}
     <div class="sidebar-footer">
-      <a href="{{ url_for('auth_routes.profile') }}" class="user-profile-widget">
-        <div class="avatar">{{ current_user.full_name[:1].upper() }}</div>
-        <div class="user-info">
-          <div class="user-name">{{ current_user.full_name }}</div>
-          <div class="user-email">{{ current_user.email }}</div>
+      <a href="{{ url_for('auth_routes.profile') }}" class="user-profile-widget" title="View profile and learning preferences">
+        <div class="user-avatar">
+          {{ current_user.full_name[:2].upper() if current_user.full_name else 'ME' }}
+        </div>
+        <div class="user-details">
+          <div class="user-name-text">{{ current_user.full_name }}</div>
+          <div class="user-email-text">{{ current_user.email }}</div>
         </div>
       </a>
     </div>
@@ -594,15 +892,29 @@
   <!-- Main Container -->
   <div class="app-main">
     <header class="app-topbar">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">&#9776;</button>
-        <h1 class="topbar-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation drawer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="topbar-breadcrumb">
+          <span>AetherLearn</span>
+          <span class="topbar-breadcrumb-separator">/</span>
+          <span class="topbar-breadcrumb-current">{% block page_title %}Dashboard{% endblock %}</span>
+        </div>
       </div>
+
       <div class="topbar-actions">
         {% block topbar_actions %}
           {% if session.get('user_id') %}
             <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary btn-sm">
-              <span>⚡</span> Generate Quiz
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>Generate Quiz</span>
             </a>
           {% else %}
             <a href="{{ url_for('auth_routes.login') }}" class="btn btn-secondary btn-sm">Log In</a>
@@ -617,8 +929,22 @@
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'message' else 'info' }}">
-              <span>ℹ️</span> {{ message }}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }}" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                {% if category == 'success' %}
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                {% elif category == 'danger' or category == 'error' %}
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                {% else %}
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                {% endif %}
+              </svg>
+              <span>{{ message }}</span>
             </div>
           {% endfor %}
         {% endif %}
@@ -629,18 +955,35 @@
   </div>
 
   <script>
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('appSidebar');
-    if (menuToggle && sidebar) {
-      menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-      });
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 900 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-          sidebar.classList.remove('open');
+    (function() {
+      const menuToggle = document.getElementById('menuToggle');
+      const sidebar = document.getElementById('appSidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+
+      function toggleSidebar() {
+        if (!sidebar) return;
+        const isOpen = sidebar.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('open', isOpen);
+      }
+
+      function closeSidebar() {
+        if (!sidebar) return;
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+      }
+
+      if (menuToggle) {
+        menuToggle.addEventListener('click', toggleSidebar);
+      }
+      if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+      }
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+          closeSidebar();
         }
       });
-    }
+    })();
   </script>
   {% block extra_js %}{% endblock %}
 </body>

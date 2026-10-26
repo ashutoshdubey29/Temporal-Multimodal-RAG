@@ -170,7 +170,7 @@ def adapt_learning_path_after_quiz(user_id: int, attempt_id: int) -> bool:
     if not path or not path.milestones:
         return False
 
-    attempt = QuizAttempt.query.get(attempt_id)
+    attempt = db.session.get(QuizAttempt, attempt_id)
     if not attempt or attempt.user_id != user_id:
         return False
 

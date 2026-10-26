@@ -1,36 +1,164 @@
 {% extends "base.html" %}
 
 {% block title %}Personalized Onboarding{% endblock %}
-{% block page_title %}Welcome to AetherLearn AI{% endblock %}
+{% block page_title %}Profile Onboarding{% endblock %}
+
+{% block extra_css %}
+<style>
+  .onboarding-steps-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .onboarding-steps-nav::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background-color: var(--odoo-border);
+    z-index: 1;
+  }
+  .step-node {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    background-color: var(--odoo-surface-card);
+    padding: 0 10px;
+  }
+  .step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--odoo-border);
+    background-color: #FFFFFF;
+    color: var(--odoo-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+  }
+  .step-node.active .step-circle {
+    border-color: var(--odoo-purple-primary);
+    background-color: var(--odoo-purple-primary);
+    color: #FFFFFF;
+  }
+  .step-node.completed .step-circle {
+    border-color: var(--odoo-success);
+    background-color: var(--odoo-success-bg);
+    color: var(--odoo-success);
+  }
+  .step-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--odoo-text-muted);
+    margin-top: 6px;
+    transition: color var(--transition-fast);
+  }
+  .step-node.active .step-label {
+    color: var(--odoo-purple-primary);
+    font-weight: 600;
+  }
+  .step-node.completed .step-label {
+    color: var(--odoo-text-primary);
+  }
+
+  .wizard-step {
+    display: none;
+  }
+  .wizard-step.active {
+    display: block;
+    animation: fadeInStep 0.2s ease-in-out;
+  }
+  @keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .domain-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--odoo-border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+  }
+  .domain-card:hover {
+    border-color: var(--odoo-border-hover);
+    background-color: var(--odoo-lavender-pale);
+  }
+  .domain-card.selected {
+    border-color: var(--odoo-purple-primary);
+    background-color: var(--odoo-purple-light);
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="max-width: 860px; margin: 20px auto;">
-  <div class="card" style="padding: 40px; border-color: rgba(99, 102, 241, 0.25); box-shadow: var(--shadow-lg);">
+<div style="max-width: 860px; margin: 20px auto 60px;">
+  <div class="card" style="padding: 36px 32px; border: 1px solid var(--odoo-border); box-shadow: var(--shadow-sm);">
     
-    <div style="margin-bottom: 32px; text-align: center;">
-      <span class="badge badge-primary" style="margin-bottom: 12px; font-size: 0.8rem; padding: 6px 14px;">Personalization Engine</span>
-      <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Configure Your Personal AI Tutor</h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 620px; margin: 8px auto 0;">
-        We tailor your video question generation, skill diagnostics, course recommendations, and milestone schedule to your exact background and study commitments.
+    <!-- Header -->
+    <div style="margin-bottom: 28px; text-align: center;">
+      <span class="badge badge-primary" style="margin-bottom: 10px;">Setup Wizard</span>
+      <h2 style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--odoo-text-primary);">
+        Configure Your Learning Profile
+      </h2>
+      <p style="font-size: 13.5px; color: var(--odoo-text-secondary); max-width: 580px; margin: 6px auto 0; line-height: 1.45;">
+        Your preferences help customize video questions, diagnose weak skills, and build an adaptive roadmap aligned with your study pace.
       </p>
     </div>
 
+    <!-- Stepper Navigation -->
+    <div class="onboarding-steps-nav">
+      <div class="step-node active" id="node-1" onclick="goToStep(1)">
+        <div class="step-circle" id="circle-1">1</div>
+        <div class="step-label">Academic Profile</div>
+      </div>
+      <div class="step-node" id="node-2" onclick="goToStep(2)">
+        <div class="step-circle" id="circle-2">2</div>
+        <div class="step-label">Interests & Skills</div>
+      </div>
+      <div class="step-node" id="node-3" onclick="goToStep(3)">
+        <div class="step-circle" id="circle-3">3</div>
+        <div class="step-label">Goals & Schedule</div>
+      </div>
+    </div>
+
     {% if error %}
-    <div class="alert alert-danger">
-      <span>⚠️</span> {{ error }}
+    <div class="alert alert-danger" style="margin-bottom: 20px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ error }}</span>
     </div>
     {% endif %}
 
     <form method="POST" action="{{ url_for('auth_routes.onboarding') }}" id="onboardingForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-      <!-- Section 1: Academic & Professional Background -->
-      <div style="margin-bottom: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--border-color);">
-        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--accent-blue); display: flex; align-items: center; gap: 8px;">
-          <span>🎓</span> 1. Academic & Professional Background
-        </h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+      <!-- STEP 1: Academic & Professional Background -->
+      <div class="wizard-step active" id="step-1">
+        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--odoo-border);">
+          <h3 style="font-size: 15px; font-weight: 600; color: var(--odoo-text-primary); margin-bottom: 4px;">
+            Academic & Professional Background
+          </h3>
+          <p style="font-size: 13px; color: var(--odoo-text-secondary);">
+            Tell us about your educational stage so explanations match your foundation level.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;">
           <div class="form-group">
             <label class="form-label" for="education_level">Current Education Level</label>
             <select id="education_level" name="education_level" class="form-select">
@@ -45,7 +173,7 @@
 
           <div class="form-group">
             <label class="form-label" for="field_of_study">Field of Study or Profession</label>
-            <input type="text" id="field_of_study" name="field_of_study" class="form-input" placeholder="e.g. Computer Science, Mechanical, Finance" value="{{ profile.field_of_study or '' }}">
+            <input type="text" id="field_of_study" name="field_of_study" class="form-input" placeholder="e.g. Computer Science, Electrical, Data Analytics" value="{{ profile.field_of_study or '' }}" required>
           </div>
 
           <div class="form-group">
@@ -53,131 +181,205 @@
             <input type="text" id="current_semester" name="current_semester" class="form-input" placeholder="e.g. 5th Semester, 3rd Year" value="{{ profile.current_semester or '' }}">
           </div>
         </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--odoo-border);">
+          <button type="button" class="btn btn-primary" onclick="goToStep(2)">
+            <span>Continue to Interests</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <!-- Section 2: Learning Interests & Subject Skill Levels -->
-      <div style="margin-bottom: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--border-color);">
-        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
-          <span>💡</span> 2. Learning Interests & Current Skill Levels
-        </h3>
-        <p style="font-size: 0.825rem; color: var(--text-dim); margin-bottom: 18px;">
-          Select the domains you want to learn. For each, indicate your current level so quizzes adapt accurately.
-        </p>
+      <!-- STEP 2: Learning Interests & Skill Levels -->
+      <div class="wizard-step" id="step-2">
+        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--odoo-border);">
+          <h3 style="font-size: 15px; font-weight: 600; color: var(--odoo-text-primary); margin-bottom: 4px;">
+            Learning Interests & Starting Proficiencies
+          </h3>
+          <p style="font-size: 13px; color: var(--odoo-text-secondary);">
+            Choose topics you want to master. We will calibrate introductory quizzes to these levels.
+          </p>
+        </div>
 
         {% set domain_options = [
-          ('Python', '🐍'),
-          ('Data Structures and Algorithms', '🧩'),
-          ('Machine Learning', '🤖'),
-          ('Web Development', '🌐'),
-          ('Artificial Intelligence', '🧠'),
-          ('Data Science', '📊'),
-          ('Java', '☕'),
-          ('Databases', '🗄️'),
-          ('Cybersecurity', '🛡️'),
-          ('Cloud Computing', '☁️')
+          'Python',
+          'Data Structures and Algorithms',
+          'Machine Learning',
+          'Web Development',
+          'Artificial Intelligence',
+          'Data Science',
+          'Java',
+          'Databases',
+          'Cybersecurity',
+          'Cloud Computing'
         ] %}
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-          {% for dom, icon in domain_options %}
-          <div style="background-color: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <input type="checkbox" id="int_{{ loop.index }}" name="interests" value="{{ dom }}" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if dom in interests or (not interests and dom in ['Python', 'Data Structures and Algorithms']) %}checked{% endif %}>
-              <label for="int_{{ loop.index }}" style="font-weight: 600; font-size: 0.9rem; cursor: pointer;">
-                {{ icon }} {{ dom }}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+          {% for dom in domain_options %}
+          <div class="domain-card {% if dom in interests or (not interests and dom in ['Python', 'Data Structures and Algorithms']) %}selected{% endif %}" id="card-{{ loop.index }}">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label for="int_{{ loop.index }}" style="font-weight: 600; font-size: 13.5px; cursor: pointer; color: var(--odoo-text-primary); display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="int_{{ loop.index }}" name="interests" value="{{ dom }}" style="width: 16px; height: 16px; accent-color: var(--odoo-purple-primary);" {% if dom in interests or (not interests and dom in ['Python', 'Data Structures and Algorithms']) %}checked{% endif %} onchange="toggleDomainSelection('{{ loop.index }}')">
+                {{ dom }}
               </label>
             </div>
-            <div style="margin-left: 28px;">
-              <select name="skill_level_{{ dom }}" class="form-select" style="padding: 6px 10px; font-size: 0.8rem;">
-                <option value="beginner" {% if skill_levels.get(dom) == 'beginner' %}selected{% endif %}>Level: Beginner</option>
-                <option value="intermediate" {% if skill_levels.get(dom) == 'intermediate' %}selected{% endif %}>Level: Intermediate</option>
-                <option value="advanced" {% if skill_levels.get(dom) == 'advanced' %}selected{% endif %}>Level: Advanced</option>
+            <div style="margin-top: 6px;">
+              <select name="skill_level_{{ dom }}" class="form-select" style="padding: 5px 8px; font-size: 12.5px; height: 32px;">
+                <option value="beginner" {% if skill_levels.get(dom) == 'beginner' %}selected{% endif %}>Beginner (Fundamentals)</option>
+                <option value="intermediate" {% if skill_levels.get(dom) == 'intermediate' %}selected{% endif %}>Intermediate (Applied)</option>
+                <option value="advanced" {% if skill_levels.get(dom) == 'advanced' %}selected{% endif %}>Advanced (Deep Concepts)</option>
               </select>
             </div>
           </div>
           {% endfor %}
         </div>
 
-        <div class="form-group" style="margin-top: 18px;">
-          <label class="form-label" for="custom_interest">Other Custom Topic or Interest (Optional)</label>
-          <input type="text" id="custom_interest" name="custom_interest" class="form-input" placeholder="e.g. Distributed Systems, Rust, Blockchain">
+        <div class="form-group" style="margin-top: 20px;">
+          <label class="form-label" for="custom_interest">Additional Subject or Framework (Optional)</label>
+          <input type="text" id="custom_interest" name="custom_interest" class="form-input" placeholder="e.g. Docker, PyTorch, React, System Design">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--odoo-border);">
+          <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Back</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="goToStep(3)">
+            <span>Continue to Goals</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <!-- Section 3: Learning Goals & Study Schedule -->
-      <div style="margin-bottom: 32px;">
-        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
-          <span>🎯</span> 3. Primary Goal & Study Commitment
-        </h3>
+      <!-- STEP 3: Goals & Schedule -->
+      <div class="wizard-step" id="step-3">
+        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--odoo-border);">
+          <h3 style="font-size: 15px; font-weight: 600; color: var(--odoo-text-primary); margin-bottom: 4px;">
+            Target Goals & Study Schedule
+          </h3>
+          <p style="font-size: 13px; color: var(--odoo-text-secondary);">
+            Specify your primary milestone so we can schedule realistic completion dates.
+          </p>
+        </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;">
           <div class="form-group">
             <label class="form-label" for="primary_goal">Primary Learning Goal</label>
             <select id="primary_goal" name="primary_goal" class="form-select">
-              <option value="Prepare for placements" {% if profile.primary_goal == 'Prepare for placements' %}selected{% endif %}>Prepare for campus / tech placements</option>
-              <option value="Learn a new technology" {% if profile.primary_goal == 'Learn a new technology' or not profile.primary_goal %}selected{% endif %}>Learn a new technology / framework</option>
-              <option value="Prepare for interviews" {% if profile.primary_goal == 'Prepare for interviews' %}selected{% endif %}>Prepare for technical interviews</option>
-              <option value="Build practical projects" {% if profile.primary_goal == 'Build practical projects' %}selected{% endif %}>Build real-world portfolio projects</option>
-              <option value="Understand college subjects" {% if profile.primary_goal == 'Understand college subjects' %}selected{% endif %}>Master university course exams</option>
-              <option value="Prepare for competitive examinations" {% if profile.primary_goal == 'Prepare for competitive examinations' %}selected{% endif %}>Prepare for competitive examinations (GATE/GRE)</option>
-              <option value="Career advancement" {% if profile.primary_goal == 'Career advancement' %}selected{% endif %}>Upskill for career promotion</option>
+              <option value="Prepare for placements" {% if profile.primary_goal == 'Prepare for placements' %}selected{% endif %}>Campus / Placement Preparation</option>
+              <option value="Learn a new technology" {% if profile.primary_goal == 'Learn a new technology' %}selected{% endif %}>Learn a New Technology</option>
+              <option value="Prepare for interviews" {% if profile.primary_goal == 'Prepare for interviews' %}selected{% endif %}>Technical Interview Preparation</option>
+              <option value="Build practical projects" {% if profile.primary_goal == 'Build practical projects' %}selected{% endif %}>Build Real-world Projects</option>
+              <option value="Understand college subjects" {% if profile.primary_goal == 'Understand college subjects' %}selected{% endif %}>Understand University Courses</option>
+              <option value="Prepare for competitive examinations" {% if profile.primary_goal == 'Prepare for competitive examinations' %}selected{% endif %}>Competitive Exams (GATE / GRE)</option>
+              <option value="Career advancement" {% if profile.primary_goal == 'Career advancement' %}selected{% endif %}>Career Transition / Advancement</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="target_skill">Primary Target Skill</label>
-            <input type="text" id="target_skill" name="target_skill" class="form-input" placeholder="e.g. Python, Fullstack Web, Algorithms" value="{{ profile.target_skill or 'Python' }}" required>
+            <label class="form-label" for="target_skill">Core Target Skill</label>
+            <input type="text" id="target_skill" name="target_skill" class="form-input" placeholder="e.g. Python, Algorithms, Machine Learning" value="{{ profile.target_skill or 'Python' }}" required>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="daily_study_minutes">Daily Available Study Time</label>
+            <label class="form-label" for="daily_study_minutes">Daily Study Commitment</label>
             <select id="daily_study_minutes" name="daily_study_minutes" class="form-select">
-              <option value="20" {% if profile.daily_study_minutes == 20 %}selected{% endif %}>20 mins/day (~2.3 hours/week - Light)</option>
-              <option value="30" {% if profile.daily_study_minutes == 30 %}selected{% endif %}>30 mins/day (~3.5 hours/week - Moderate)</option>
-              <option value="45" {% if profile.daily_study_minutes == 45 or not profile.daily_study_minutes %}selected{% endif %}>45 mins/day (~5.2 hours/week - Standard)</option>
-              <option value="60" {% if profile.daily_study_minutes == 60 %}selected{% endif %}>60 mins/day (~7.0 hours/week - Intensive)</option>
-              <option value="120" {% if profile.daily_study_minutes == 120 %}selected{% endif %}>120 mins/day (~14.0 hours/week - Full Immersion)</option>
+              <option value="20" {% if profile.daily_study_minutes == 20 %}selected{% endif %}>20 mins / day (~2.3 hours/week)</option>
+              <option value="30" {% if profile.daily_study_minutes == 30 %}selected{% endif %}>30 mins / day (~3.5 hours/week)</option>
+              <option value="45" {% if profile.daily_study_minutes == 45 or not profile.daily_study_minutes %}selected{% endif %}>45 mins / day (~5.2 hours/week)</option>
+              <option value="60" {% if profile.daily_study_minutes == 60 %}selected{% endif %}>60 mins / day (~7 hours/week)</option>
+              <option value="90" {% if profile.daily_study_minutes == 90 %}selected{% endif %}>90 mins / day (~10.5 hours/week)</option>
+              <option value="120" {% if profile.daily_study_minutes == 120 %}selected{% endif %}>120 mins / day (~14 hours/week)</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="preferred_difficulty">Preferred Question Difficulty</label>
+            <label class="form-label" for="preferred_difficulty">Preferred Quiz Difficulty</label>
             <select id="preferred_difficulty" name="preferred_difficulty" class="form-select">
-              <option value="easy" {% if profile.preferred_difficulty == 'easy' %}selected{% endif %}>Easy (Foundational Confidence)</option>
-              <option value="medium" {% if profile.preferred_difficulty == 'medium' or not profile.preferred_difficulty %}selected{% endif %}>Medium (Balanced Application)</option>
-              <option value="hard" {% if profile.preferred_difficulty == 'hard' %}selected{% endif %}>Hard (Rigorous & In-depth)</option>
-              <option value="mixed" {% if profile.preferred_difficulty == 'mixed' %}selected{% endif %}>Mixed (Progressive Ladder)</option>
+              <option value="easy" {% if profile.preferred_difficulty == 'easy' %}selected{% endif %}>Easy (Foundational retention)</option>
+              <option value="medium" {% if profile.preferred_difficulty == 'medium' or not profile.preferred_difficulty %}selected{% endif %}>Medium (Conceptual & Application)</option>
+              <option value="hard" {% if profile.preferred_difficulty == 'hard' %}selected{% endif %}>Hard (Deep conceptual & Edge cases)</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="preferred_format">Preferred Learning Format</label>
+            <label class="form-label" for="preferred_format">Preferred Study Format</label>
             <select id="preferred_format" name="preferred_format" class="form-select">
-              <option value="mixture" {% if profile.preferred_format == 'mixture' or not profile.preferred_format %}selected{% endif %}>Mixture (Videos + Quizzes + Reading)</option>
-              <option value="video" {% if profile.preferred_format == 'video' %}selected{% endif %}>Video Heavy (Lecture-based)</option>
-              <option value="practice questions" {% if profile.preferred_format == 'practice questions' %}selected{% endif %}>Practice First (Active Recall / MCQs)</option>
-              <option value="reading" {% if profile.preferred_format == 'reading' %}selected{% endif %}>Reading (Documentation / Tutorials)</option>
+              <option value="mixture" {% if profile.preferred_format == 'mixture' or not profile.preferred_format %}selected{% endif %}>Balanced (Video lectures + Quizzes)</option>
+              <option value="video_heavy" {% if profile.preferred_format == 'video_heavy' %}selected{% endif %}>Visual Learner (Video & Transcripts)</option>
+              <option value="practice_heavy" {% if profile.preferred_format == 'practice_heavy' %}selected{% endif %}>Practice First (Frequent Quizzes)</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="target_completion_date">Target Completion Date (Optional)</label>
-            <input type="date" id="target_completion_date" name="target_completion_date" class="form-input" value="{{ profile.target_completion_date or '' }}">
+            <label class="form-label" for="career_goal">Target Role / Career Goal (Optional)</label>
+            <input type="text" id="career_goal" name="career_goal" class="form-input" placeholder="e.g. Full-Stack Engineer, AI Researcher, Data Analyst" value="{{ profile.career_goal or '' }}">
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="career_goal">Long-term Career Goal (Optional)</label>
-          <input type="text" id="career_goal" name="career_goal" class="form-input" placeholder="e.g. AI Research Engineer at top tech company, Full-Stack Developer, Data Scientist" value="{{ profile.career_goal or '' }}">
+        <div style="display: flex; justify-content: space-between; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--odoo-border);">
+          <button type="button" class="btn btn-secondary" onclick="goToStep(2)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Back</span>
+          </button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <span>Complete Setup & Generate Path</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-        <button type="submit" class="btn btn-primary btn-lg" style="padding: 14px 32px;">
-          Save & Launch Personalized Platform 🚀
-        </button>
-      </div>
     </form>
-
   </div>
 </div>
+
+<script>
+  let currentStep = 1;
+
+  function goToStep(step) {
+    if (step < 1 || step > 3) return;
+    currentStep = step;
+
+    // Toggle steps
+    document.querySelectorAll('.wizard-step').forEach((el, index) => {
+      el.classList.toggle('active', (index + 1) === step);
+    });
+
+    // Update Stepper indicators
+    for (let i = 1; i <= 3; i++) {
+      const node = document.getElementById('node-' + i);
+      const circle = document.getElementById('circle-' + i);
+      if (!node || !circle) continue;
+
+      node.classList.remove('active', 'completed');
+      if (i === step) {
+        node.classList.add('active');
+        circle.textContent = i;
+      } else if (i < step) {
+        node.classList.add('completed');
+        circle.innerHTML = '&#10003;';
+      } else {
+        circle.textContent = i;
+      }
+    }
+  }
+
+  function toggleDomainSelection(index) {
+    const card = document.getElementById('card-' + index);
+    const checkbox = document.getElementById('int_' + index);
+    if (card && checkbox) {
+      card.classList.toggle('selected', checkbox.checked);
+    }
+  }
+</script>
 {% endblock %}

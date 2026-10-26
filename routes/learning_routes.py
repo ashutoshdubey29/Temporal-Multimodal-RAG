@@ -370,7 +370,7 @@ def quiz_attempt_results(attempt_id: int):
     # Fetch video session if linked
     video_session = None
     if quiz and quiz.video_session_id:
-        video_session = VideoLearningSession.query.get(quiz.video_session_id)
+        video_session = db.session.get(VideoLearningSession, quiz.video_session_id)
 
     return render_template(
         "learning/quiz_results.html",
@@ -483,7 +483,7 @@ def learning_path_view():
 def update_milestone_status(milestone_id: int):
     """Updates a milestone's status ('not_started', 'in_progress', 'completed', 'needs_review')."""
     user = get_current_user()
-    milestone = LearningMilestone.query.get(milestone_id)
+    milestone = db.session.get(LearningMilestone, milestone_id)
     if not milestone or milestone.learning_path.user_id != user.id:
         abort(404, description="Milestone not found or unauthorized.")
 
