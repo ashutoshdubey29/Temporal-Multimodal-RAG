@@ -15,6 +15,9 @@ from unittest.mock import patch, MagicMock
 import json
 import os
 
+# Ensure test suite runs in-memory and never alters the persistent development database
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from app import app
 from models.database import (
     db,
@@ -402,6 +405,252 @@ class TestLearningPlatform(unittest.TestCase):
         # User 2 tries to access User 1's quiz
         resp = self.client.get(f"/quiz/{quiz1.id}")
         self.assertEqual(resp.status_code, 404)  # Unauthorized / Not Found for other user
+
+    # ====================================================
+    # 8. QUIZ QUESTIONS & OPTIONS BLANK BUG REGRESSION TESTS
+    # ====================================================
+
+    def test_quiz_question_canonical_format_and_options_visibility(self):
+        """Verifies QuizQuestion.to_dict() provides question_text, question, canonical options, and option_a-d."""
+        ok, _, user = register_user("Alice Smith", "alice_quiz@example.com", "Pass12345", "Pass12345")
+        quiz = Quiz(user_id=user.id, title="Data Architecture", question_count=1)
+        db.session.add(quiz)
+        db.session.flush()
+
+        qq = QuizQuestion(
+            quiz_id=quiz.id,
+            question_text="What is the primary function of an inverted index?",
+            options_json=json.dumps({
+                "A": "Store documents sequentially on magnetic disk",
+                "B": "Map terms to the locations where they occur",
+                "C": "Compress images using discrete wavelet transforms",
+                "D": "Authenticate network sockets with public keys"
+            }),
+            correct_option="B",
+            explanation="An inverted index maps distinct terms to their containing documents.",
+            topic="Information Retrieval",
+            difficulty="medium",
+            source_start=45.0,
+            source_end=60.0
+        )
+        db.session.add(qq)
+        db.session.commit()
+
+        d = qq.to_dict(include_answer=False)
+        # Verify question text is populated
+        self.assertEqual(d["question"], "What is the primary function of an inverted index?")
+        self.assertEqual(d["question_text"], "What is the primary function of an inverted index?")
+
+        # Verify options list contains 4 objects with value and label
+        self.assertEqual(len(d["options"]), 4)
+        opt_values = [opt["value"] for opt in d["options"]]
+        self.assertEqual(opt_values, ["A", "B", "C", "D"])
+        opt_labels = [opt["label"] for opt in d["options"]]
+        self.assertIn("Map terms to the locations where they occur", opt_labels)
+
+        # Verify options list also supports dict .get() and ['A']
+        self.assertEqual(d["options"].get("B"), "Map terms to the locations where they occur")
+        self.assertEqual(d["options"]["B"], "Map terms to the locations where they occur")
+
+        # Verify individual option fields
+        self.assertEqual(d["option_a"], "Store documents sequentially on magnetic disk")
+        self.assertEqual(d["option_b"], "Map terms to the locations where they occur")
+        self.assertEqual(d["option_c"], "Compress images using discrete wavelet transforms")
+        self.assertEqual(d["option_d"], "Authenticate network sockets with public keys")
+
+    def test_quiz_take_template_renders_question_and_all_options(self):
+        """Verifies quiz_take.html renders the full question text and four complete option labels."""
+        ok, _, user = register_user("Bob Jones", "bob_quiz@example.com", "Pass12345", "Pass12345")
+        quiz = Quiz(user_id=user.id, title="Network Protocols", question_count=1)
+        db.session.add(quiz)
+        db.session.flush()
+
+        qq = QuizQuestion(
+            quiz_id=quiz.id,
+            question_text="Which transport protocol provides reliable byte stream transmission?",
+            options_json=json.dumps({
+                "A": "User Datagram Protocol (UDP)",
+                "B": "Transmission Control Protocol (TCP)",
+                "C": "Internet Control Message Protocol (ICMP)",
+                "D": "Border Gateway Protocol (BGP)"
+            }),
+            correct_option="B",
+            topic="Networking",
+            difficulty="easy"
+        )
+        db.session.add(qq)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user.id
+            sess["user_name"] = user.full_name
+            sess["user_email"] = user.email
+
+        resp = self.client.get(f"/quiz/{quiz.id}")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+
+        # Question text must be present in HTML
+        self.assertIn("Which transport protocol provides reliable byte stream transmission?", html)
+        # All 4 option labels must be present in HTML
+        self.assertIn("User Datagram Protocol (UDP)", html)
+        self.assertIn("Transmission Control Protocol (TCP)", html)
+        self.assertIn("Internet Control Message Protocol (ICMP)", html)
+        self.assertIn("Border Gateway Protocol (BGP)", html)
+        # Option indicators A, B, C, D must be present
+        self.assertIn("opt_label_", html)
+
+    def test_object_and_array_form_options_normalized(self):
+        """Verifies both dict-form and array-form options are normalized into canonical structure."""
+        from learning.quiz_generator import clean_single_question
+
+        # Array of objects format
+        array_q = {
+            "question": "What is the capital of France?",
+            "options": [
+                {"value": "A", "label": "Berlin"},
+                {"value": "B", "label": "Madrid"},
+                {"value": "C", "label": "Paris"},
+                {"value": "D", "label": "Rome"}
+            ],
+            "correct_option": "C",
+            "explanation": "Paris is the capital of France.",
+            "topic": "Geography"
+        }
+        ok, err, cleaned = clean_single_question(array_q)
+        self.assertTrue(ok)
+        self.assertIsNotNone(cleaned)
+        self.assertEqual(cleaned["options"]["C"], "Paris")
+        self.assertEqual(cleaned["correct_option"], "C")
+
+        # Object format
+        obj_q = {
+            "question": "What is the capital of Germany?",
+            "options": {"A": "Berlin", "B": "Madrid", "C": "Paris", "D": "Rome"},
+            "correct_option": "A",
+            "explanation": "Berlin is the capital of Germany.",
+            "topic": "Geography"
+        }
+        ok, err, cleaned = clean_single_question(obj_q)
+        self.assertTrue(ok)
+        self.assertEqual(cleaned["options"]["A"], "Berlin")
+
+    def test_rejection_of_invalid_questions(self):
+        """Verifies empty question text, empty options, and invalid answer keys are strictly rejected."""
+        from learning.quiz_generator import validate_single_question
+
+        # Empty question text
+        bad_text = {
+            "question": "",
+            "options": {"A": "One", "B": "Two", "C": "Three", "D": "Four"},
+            "correct_option": "A"
+        }
+        ok, _ = validate_single_question(bad_text)
+        self.assertFalse(ok)
+
+        # Empty option label
+        bad_opt = {
+            "question": "Valid question prompt text here?",
+            "options": {"A": "One", "B": "", "C": "Three", "D": "Four"},
+            "correct_option": "A"
+        }
+        ok, _ = validate_single_question(bad_opt)
+        self.assertFalse(ok)
+
+        # Invalid correct_option (not in A, B, C, D)
+        bad_key = {
+            "question": "Valid question prompt text here?",
+            "options": {"A": "One", "B": "Two", "C": "Three", "D": "Four"},
+            "correct_option": "Z"
+        }
+        ok, _ = validate_single_question(bad_key)
+        self.assertFalse(ok)
+
+    def test_extract_json_payload_resilience(self):
+        """Verifies extract_json_payload parses markdown code fences and conversational wrappers."""
+        from learning.quiz_generator import extract_json_payload
+
+        raw_fenced = '```json\n[{"question": "What is 2+2?", "options": {"A":"1","B":"2","C":"3","D":"4"}, "correct_option":"D"}]\n```'
+        parsed = extract_json_payload(raw_fenced)
+        self.assertIsInstance(parsed, list)
+        self.assertEqual(len(parsed), 1)
+
+        raw_conversational = 'Here are your requested quiz questions:\n```\n[{"question": "Q1", "options": {"A":"1","B":"2","C":"3","D":"4"}, "correct_option":"A"}]\n```\nHope this helps!'
+        parsed = extract_json_payload(raw_conversational)
+        self.assertIsInstance(parsed, list)
+        self.assertEqual(parsed[0]["question"], "Q1")
+
+    def test_quiz_persistence_and_reload_identity(self):
+        """Verifies that a valid quiz persists and reloads with identical content."""
+        ok, _, user = register_user("Persistence User", "persist@example.com", "Pass12345", "Pass12345")
+        quiz = Quiz(user_id=user.id, title="Persistence Check", question_count=1)
+        db.session.add(quiz)
+        db.session.flush()
+
+        original_text = "What is the primary role of the CPU program counter?"
+        original_opts = {"A": "Hold address of next instruction", "B": "Store ALU results", "C": "Manage page faults", "D": "Buffer disk blocks"}
+        qq = QuizQuestion(
+            quiz_id=quiz.id,
+            question_text=original_text,
+            options_json=json.dumps(original_opts),
+            correct_option="A",
+            explanation="The program counter stores the memory address of the next instruction.",
+            topic="Computer Architecture",
+            difficulty="medium",
+            source_start=15.5,
+            source_end=22.0
+        )
+        db.session.add(qq)
+        db.session.commit()
+
+        # Reload from database in fresh query
+        reloaded_quiz = db.session.get(Quiz, quiz.id)
+        self.assertIsNotNone(reloaded_quiz)
+        self.assertEqual(len(reloaded_quiz.questions), 1)
+        rq = reloaded_quiz.questions[0]
+        self.assertEqual(rq.question_text, original_text)
+        self.assertEqual(rq.get_options(), original_opts)
+        self.assertEqual(rq.correct_option, "A")
+        self.assertEqual(rq.source_start, 15.5)
+
+    def test_quiz_json_api_response(self):
+        """Verifies /quiz/<id> returns canonical quiz JSON structure when requested with Accept: application/json."""
+        ok, _, user = register_user("API User", "api_quiz@example.com", "Pass12345", "Pass12345")
+        quiz = Quiz(user_id=user.id, title="API Architecture", question_count=1)
+        db.session.add(quiz)
+        db.session.flush()
+
+        qq = QuizQuestion(
+            quiz_id=quiz.id,
+            question_text="What HTTP status code represents resource created?",
+            options_json=json.dumps({"A": "200", "B": "201", "C": "204", "D": "301"}),
+            correct_option="B",
+            topic="Web APIs"
+        )
+        db.session.add(qq)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user.id
+            sess["user_name"] = user.full_name
+            sess["user_email"] = user.email
+
+        resp = self.client.get(f"/quiz/{quiz.id}", headers={"Accept": "application/json"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data.get("success"))
+        quiz_data = data.get("quiz", {})
+        self.assertEqual(quiz_data.get("title"), "API Architecture")
+        questions = quiz_data.get("questions", [])
+        self.assertEqual(len(questions), 1)
+        q0 = questions[0]
+        self.assertEqual(q0.get("question"), "What HTTP status code represents resource created?")
+        self.assertEqual(q0.get("question_text"), "What HTTP status code represents resource created?")
+        # Options must be canonical list of 4 items
+        self.assertEqual(len(q0.get("options")), 4)
+        self.assertEqual(q0["options"][0]["value"], "A")
+        # Correct answer must NOT be exposed before submission
+        self.assertNotIn("correct_option", q0)
 
 
 if __name__ == "__main__":

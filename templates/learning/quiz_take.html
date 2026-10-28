@@ -152,15 +152,41 @@
   <form id="quizForm" method="POST" action="{{ url_for('learning_routes.submit_quiz', quiz_id=quiz.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
+    {% if not questions %}
+    <div class="card" style="padding: 40px 24px; text-align: center; border: 1px solid var(--odoo-border); margin-bottom: 20px;">
+      <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background-color: var(--odoo-lavender-pale); color: var(--odoo-purple-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--odoo-text-primary); margin-bottom: 8px;">
+        No Questions Available
+      </h3>
+      <p style="font-size: 13.5px; color: var(--odoo-text-secondary); max-width: 460px; margin: 0 auto 20px;">
+        This quiz does not contain any questions. Please generate a new quiz to begin practicing.
+      </p>
+      <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn btn-primary">
+        Generate New Quiz
+      </a>
+    </div>
+    {% endif %}
+
     {% for q in questions %}
     {% set q_idx = loop.index %}
     <div class="question-container {% if loop.first %}active{% endif %}" id="q_pane_{{ q_idx }}" data-qid="{{ q.id }}">
       <div class="card" style="padding: 28px 26px; border: 1px solid var(--odoo-border); margin-bottom: 20px;">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px;">
-          <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-purple-primary);">
-            Question {{ q_idx }} &bull; Topic: {{ q.topic }}
-          </span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--odoo-purple-primary);">
+              Question {{ q_idx }} of {{ questions|length }} &bull; Topic: {{ q.topic or 'General' }}
+            </span>
+            <span class="badge badge-secondary" style="font-size: 10.5px; text-transform: capitalize;">
+              {{ q.difficulty or quiz.difficulty or 'medium' }}
+            </span>
+          </div>
           {% if q.source_start is not none %}
           <span class="badge badge-secondary" style="font-size: 11px;">
             Timestamp: {{ q.source_start|int }}s
@@ -168,13 +194,44 @@
           {% endif %}
         </div>
 
+        {% set q_display_text = q.question_text or q.question %}
+        {% if q_display_text %}
         <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.5; color: var(--odoo-text-primary); margin-bottom: 22px;">
-          {{ q.question_text }}
+          {{ q_display_text }}
         </h3>
+        {% else %}
+        <div class="alert alert-warning" style="margin-bottom: 20px;">
+          This question could not be loaded.
+        </div>
+        {% endif %}
 
-        <!-- 4 Options -->
-        <div style="display: flex; flex-direction: column; gap: 2px;">
+        <!-- Resolve 4 Options from Canonical List, Dict, or Option Properties -->
+        {% set opt_items = [] %}
+        {% if q.options is iterable and q.options is not string and q.options is not mapping %}
+          {% for opt in q.options %}
+            {% if opt is mapping and 'value' in opt and 'label' in opt and opt.label %}
+              {% set _ = opt_items.append((opt.value, opt.label)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if not opt_items and q.options is mapping %}
+          {% for letter in ['A', 'B', 'C', 'D'] %}
+            {% if letter in q.options and q.options[letter] %}
+              {% set _ = opt_items.append((letter, q.options[letter])) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if not opt_items %}
           {% for letter, text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+            {% if text %}
+              {% set _ = opt_items.append((letter, text)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if opt_items %}
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          {% for letter, text in opt_items %}
           <label class="option-card" id="opt_label_{{ q.id }}_{{ letter }}">
             <input type="radio" name="q_{{ q.id }}" value="{{ letter }}" style="display: none;" onchange="handleOptionSelected('{{ q_idx }}', '{{ q.id }}', '{{ letter }}')">
             <span class="option-indicator">{{ letter }}</span>
@@ -182,6 +239,11 @@
           </label>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="alert alert-warning" style="margin-top: 10px;">
+          This question could not be loaded. Please try refreshing or regenerating the quiz.
+        </div>
+        {% endif %}
 
       </div>
     </div>

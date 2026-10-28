@@ -33,6 +33,9 @@ from rag.qa import (
     retrieve_context_for_query,
     generate_fallback_answer,
     merge_adjacent_segments,
+    format_seconds_to_time,
+    format_timestamp_display,
+    extract_cited_timestamps,
 )
 from rag.llm import (
     get_llm_config,
@@ -361,8 +364,131 @@ class TestRAGQuestionAnswering(unittest.TestCase):
         self.assertEqual(data["answer_mode"], "llm")
         self.assertIn("YouTube test explanation", data["answer"])
         self.assertIn("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=", data["youtube_url"])
-        self.assertIsInstance(data["sources"], list)
-        self.assertIsInstance(data["timestamps"], list)
+    # =========================================================================
+    # 12. Human-Readable Timestamps and Helper Utilities
+    # =========================================================================
+    def test_timestamp_formatting_helpers(self):
+        """Verify format_seconds_to_time and format_timestamp_display convert seconds to MM:SS."""
+        self.assertEqual(format_seconds_to_time(394.20), "06:34")
+        self.assertEqual(format_seconds_to_time(409.84), "06:50")
+        self.assertEqual(format_seconds_to_time(0.0), "00:00")
+        self.assertEqual(format_seconds_to_time(3665.0), "01:01:05")
+        self.assertEqual(format_seconds_to_time(None), "")
+
+        # Range formatting
+        self.assertEqual(format_timestamp_display(394.20, 409.84), "06:34–06:50")
+        self.assertEqual(format_timestamp_display(10.0, None), "00:10")
+        self.assertEqual(format_timestamp_display(None, None), "Not available")
+
+    def test_extract_cited_timestamps(self):
+        """Verify extract_cited_timestamps discovers timestamps from text in various formats."""
+        text1 = "A walk is defined as an alternating sequence of vertices and edges [06:34–06:50]."
+        cited1 = extract_cited_timestamps(text1)
+        self.assertEqual(len(cited1), 2)
+        self.assertAlmostEqual(cited1[0], 394.0, delta=1.0)
+        self.assertAlmostEqual(cited1[1], 410.0, delta=1.0)
+
+        text2 = "Refer to 394.20s – 409.84s in the video."
+        cited2 = extract_cited_timestamps(text2)
+        self.assertEqual(len(cited2), 2)
+        self.assertAlmostEqual(cited2[0], 394.2, delta=0.1)
+
+    # =========================================================================
+    # 13. Timestamp Citation and Navigation Synchronization
+    # =========================================================================
+    @patch("rag.qa.generate_llm_answer")
+    @patch("rag.qa.get_llm_config")
+    def test_timestamp_synchronization_with_cited_answer(self, mock_get_config, mock_llm):
+        """Verify when LLM cites a timestamp range, primary_timestamp and navigation sync to that range."""
+        mock_get_config.return_value = {"is_configured": True, "provider": "gemini"}
+        # Simulate LLM referencing the 164s transition segment
+        mock_llm.return_value = (
+            True,
+            "State transitions emit events that the controller handles [02:44–02:48].",
+            ""
+        )
+
+        res = answer_question("Explain what happens when state transitions occur", self.sample_segments)
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["answer_mode"], "llm")
+        # 164.64 seconds is ~02:45
+        self.assertIn("02:4", res["timestamp_str"])
+        self.assertAlmostEqual(res["primary_timestamp"]["start"], 164.64, delta=5.0)
+        # Ensure the first source corresponds to the cited evidence
+        self.assertIn("transition from state A", res["sources"][0]["text"])
+
+    # =========================================================================
+    # 14. Asynchronous JSON /ask Endpoint Response Consistency
+    # =========================================================================
+    @patch("rag.qa.generate_llm_answer")
+    @patch("rag.qa.get_llm_config")
+    def test_json_ask_endpoint_consistent_data(self, mock_get_config, mock_llm):
+        """Verify POST /ask with JSON returns consistent timestamp, start, end, and sources."""
+        mock_get_config.return_value = {"is_configured": True, "provider": "gemini"}
+        mock_llm.return_value = (
+            True,
+            "In graph theory, a **vertex** is a node and an **edge** is a connection [02:44–02:48].",
+            ""
+        )
+
+        v_id = "test_json_sync_video"
+        VIDEO_STORE[v_id] = {
+            "id": v_id,
+            "type": "local",
+            "filename": "graph_theory.mp4",
+            "segments": [
+                {
+                    "start": 164.64,
+                    "end": 168.96,
+                    "text": "A walk in graph theory is an alternating sequence of vertices and edges."
+                }
+            ]
+        }
+
+        resp = self.client.post(
+            "/ask",
+            json={"question": "What are vertices and edges?", "source_id": v_id}
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+
+        self.assertTrue(data["success"])
+        self.assertEqual(data["answer_mode"], "llm")
+        self.assertIn("vertex", data["answer"].lower())
+        self.assertIsNotNone(data["start"])
+        self.assertIsNotNone(data["end"])
+        self.assertIsInstance(data["timestamp"], str)
+        self.assertIn("–", data["timestamp"])
+        self.assertGreaterEqual(len(data["sources"]), 1)
+        # Verify sources have timestamp_str
+        self.assertIn("timestamp_str", data["sources"][0])
+
+    # =========================================================================
+    # 15. HTML Template Structure and Form Attributes
+    # =========================================================================
+    def test_html_template_elements_for_async_ask(self):
+        """Verify the template includes askSubmitBtn, questionResultArea, and answerContainer without blocking overlays."""
+        v_id = "test_template_video"
+        VIDEO_STORE[v_id] = {
+            "id": v_id,
+            "type": "local",
+            "filename": "test.mp4",
+            "segments": self.sample_segments
+        }
+
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+
+        # Verify askForm does not have data-loading overlay trigger
+        self.assertIn('id="askForm"', html)
+        self.assertNotIn('id="askForm" action="/ask" method="POST" data-loading=', html)
+        # Verify submit button ID
+        self.assertIn('id="askSubmitBtn"', html)
+        # Verify questionResultArea and answerContainer are in the DOM
+        self.assertIn('id="questionResultArea"', html)
+        self.assertIn('id="answerContainer"', html)
 
 
 class TestLLMClientFunctions(unittest.TestCase):

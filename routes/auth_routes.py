@@ -1,7 +1,25 @@
 """
 routes/auth_routes.py
+=====================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module defines the Flask Blueprint for student identity, session management,
+and learning onboarding.
 
-Authentication and user profile onboarding routes.
+Key Viva Flow Points:
+1. Registration & Auto-Login:
+   - When a student registers at `/register`, passwords are cryptographically salted & hashed.
+   - The user is automatically logged into the session and redirected to `/onboarding`.
+2. Onboarding Questionnaire:
+   - Collects student academic context: education level, field of study, specific interests,
+     target skill, and daily study minutes.
+   - On submission, it automatically calls `create_learning_path_for_user()` to instantiate
+     a personalized milestone roadmap before redirecting to the main dashboard.
+3. Content Negotiation:
+   - All routes support both traditional server-rendered HTML forms and modern JSON APIs
+     (inspecting `request.is_json` or `Accept: application/json`).
+4. Session Security:
+   - Protected routes use the `@login_required` decorator.
+   - Sensitive forms include CSRF tokens generated via `generate_csrf_token()`.
 """
 
 import json
@@ -26,7 +44,17 @@ auth_bp = Blueprint("auth_routes", __name__)
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    """Handles new user registration."""
+    """
+    Handles student registration.
+    
+    Viva Flow:
+    - If already logged in, redirects immediately to `/dashboard`.
+    - On POST:
+      1. Extracts full_name, email, password, confirm_password from JSON or Form.
+      2. Validates and hashes password using `register_user()`.
+      3. Establishes user session keys (`user_id`, `user_name`, `user_email`).
+      4. Redirects to `/auth/onboarding` to customize the learning experience.
+    """
     if session.get("user_id"):
         return redirect(url_for("learning_routes.dashboard"))
 
@@ -45,7 +73,7 @@ def register():
                 return jsonify({"success": False, "error": msg}), 400
             return render_template("auth/register.html", error=msg, full_name=full_name, email=email)
 
-        # Log in newly registered user immediately
+        # Log in newly registered user immediately in the active session
         session["user_id"] = user.id
         session["user_name"] = user.full_name
         session["user_email"] = user.email
@@ -66,7 +94,16 @@ def register():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Handles user login."""
+    """
+    Handles student login and credential verification.
+    
+    Viva Flow:
+    - If already logged in, redirects immediately to `/dashboard`.
+    - On POST:
+      1. Calls `authenticate_user(email, password)`.
+      2. If valid, writes user ID to session and redirects to `next_url` (or `/dashboard`).
+      3. If invalid, renders login page with an informative error message.
+    """
     if session.get("user_id"):
         return redirect(url_for("learning_routes.dashboard"))
 
@@ -101,7 +138,13 @@ def login():
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    """Logs out user and clears session."""
+    """
+    Terminates user session and redirects to the login screen.
+    
+    Viva Flow:
+    - Calls `session.clear()` to invalidate the client cookie and clear in-memory credentials.
+    - Flashes a logout notice and redirects to `/auth/login`.
+    """
     session.clear()
     flash("You have been logged out successfully.", "info")
     return redirect(url_for("auth_routes.login"))
@@ -110,7 +153,16 @@ def logout():
 @auth_bp.route("/onboarding", methods=["GET", "POST"])
 @login_required
 def onboarding():
-    """Multi-step onboarding wizard for personalized learning configuration."""
+    """
+    Multi-step onboarding wizard for personalized learning configuration.
+    
+    Viva Flow:
+    - Captures academic background (education level, field of study, current semester).
+    - Captures topic interests and initial self-assessed skill levels.
+    - Captures target skill and daily study budget (minutes/day).
+    - Automatically builds an initial personalized learning path using `create_learning_path_for_user()`.
+    - Marks `profile.onboarding_completed = True` and redirects to `/dashboard`.
+    """
     user = get_current_user()
     if not user:
         return redirect(url_for("auth_routes.login"))
@@ -121,12 +173,12 @@ def onboarding():
         is_json = request.is_json or request.headers.get("Accept") == "application/json"
         data = request.get_json(silent=True) if request.is_json else request.form
 
-        # Step 1: Basic Information
+        # Step 1: Basic Academic Information
         profile.education_level = data.get("education_level", profile.education_level or "undergraduate")
         profile.field_of_study = data.get("field_of_study", profile.field_of_study or "").strip()
         profile.current_semester = data.get("current_semester", profile.current_semester or "").strip()
 
-        # Step 2: Learning Interests & Skill Levels
+        # Step 2: Learning Interests & Self-Assessed Skill Levels
         if is_json:
             interests_list = data.get("interests", [])
             skill_levels_dict = data.get("subject_skill_levels", {})
@@ -144,7 +196,7 @@ def onboarding():
         profile.set_interests_list(interests_list)
         profile.set_skill_levels_dict(skill_levels_dict)
 
-        # Step 3: Goals & Study Time
+        # Step 3: Goals & Study Time Budget
         profile.primary_goal = data.get("primary_goal", profile.primary_goal or "Learn a new technology").strip()
         profile.target_skill = data.get("target_skill", profile.target_skill or "Python").strip()
         profile.target_completion_date = data.get("target_completion_date", profile.target_completion_date or "").strip()
@@ -205,7 +257,14 @@ def onboarding():
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    """Allows user to view and update learning profile settings."""
+    """
+    Allows students to view and update their profile and learning preferences.
+    
+    Viva Flow:
+    - Protected by `@login_required`.
+    - Allows modifying study goals, target skill, daily minutes, and academic details.
+    - Updates SQLite record and syncs `weekly_study_hours` accordingly.
+    """
     user = get_current_user()
     profile = user.profile or UserProfile(user_id=user.id)
 

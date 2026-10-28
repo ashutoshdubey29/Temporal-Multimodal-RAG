@@ -1,8 +1,33 @@
 """
 processing/youtube_processor.py
+===============================
+MODULE PURPOSE (VIVA SUMMARY):
+This file handles YouTube video processing for AetherLearn.
+Instead of forcing the student to manually download massive video files to their computer,
+it allows them to simply paste any valid YouTube link (e.g. tutorial or lecture).
 
-Provides robust URL validation, metadata retrieval, multi-tiered caption extraction,
-permitted Whisper audio fallback, and granular diagnostic error reporting for YouTube videos.
+KEY CONCEPTS TO EXPLAIN IN VIVA:
+1. Video ID Extraction:
+   Every YouTube video has a unique 11-character base64 identifier (e.g. 'dQw4w9WgXcQ').
+   This file validates the domain and extracts the ID from various link formats (watch, youtu.be, shorts, embeds).
+2. YouTube oEmbed API:
+   A lightweight, free HTTP endpoint provided by YouTube to fetch video metadata (title, author, thumbnail)
+   without requiring an expensive or complex Google Cloud API key.
+3. Multi-Tiered Caption Strategy (Fastest Path):
+   First queries the YouTube Transcript API. If official English subtitles exist, it downloads them in ~1 second.
+   If not, it tries auto-generated captions, then translatable tracks.
+4. yt-dlp + Whisper Audio Fallback (Complete Reliability):
+   If subtitles are disabled or missing on YouTube, it uses `yt-dlp` to download only the lightweight audio stream
+   into a temporary file, transcribes it with OpenAI's Whisper model, and immediately deletes the temporary audio.
+5. Granular Diagnostics:
+   Distinguishes between IP rate-limits (HTTP 429), age-restrictions, private videos, and missing captions,
+   providing transparent error messages to the user.
+
+HOW THIS MODULE CONNECTS TO OTHER FILES:
+- Called by `app.py` in the `/process_youtube` POST route when a student submits a YouTube URL.
+- Uses `transcribe_video()` and `ensure_ffmpeg()` from `processing/transcription.py` during audio fallback.
+- Returns timestamped transcript segments `[{"start": 0.0, "end": 4.5, "text": "..."}]` which are fed into
+  `rag/qa.py` for question answering and `learning/quiz_generator.py` for quiz creation.
 """
 
 from urllib.parse import urlparse, parse_qs
@@ -39,23 +64,34 @@ YOUTUBE_DOMAINS = {
     "www.youtu.be",
 }
 
-# Standard 11-character base64url YouTube video ID pattern
+# Standard 11-character base64url YouTube video ID pattern (e.g., dQw4w9WgXcQ)
 VIDEO_ID_REGEX = re.compile(r"^[a-zA-Z0-9_-]{11}$")
 
 
 def extract_youtube_video_id(url: str) -> tuple[bool, str, str]:
     """
     Validates a YouTube URL and safely extracts the 11-character video ID.
-    
-    Supported formats:
-      - https://www.youtube.com/watch?v=VIDEO_ID
-      - https://youtu.be/VIDEO_ID
-      - https://www.youtube.com/embed/VIDEO_ID
-      - https://www.youtube.com/shorts/VIDEO_ID
-      - URLs with additional query parameters (e.g., &t=..., &feature=...)
-    
+
+    VIVA EXPLANATION:
+    Users paste YouTube links in many formats (full watch URLs, shortened youtu.be links,
+    embedded player URLs, YouTube Shorts, or URLs with extra tracking parameters like &t=10s).
+    This function parses the URL, validates the domain, and extracts just the 11-character video ID.
+
+    Supported URL Formats:
+      - Standard: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+      - Shortened: https://youtu.be/dQw4w9WgXcQ
+      - Embedded: https://www.youtube.com/embed/dQw4w9WgXcQ
+      - Shorts: https://www.youtube.com/shorts/dQw4w9WgXcQ
+      - Query params: https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45s&feature=share
+
+    Parameters:
+        url (str): The raw YouTube URL entered by the user.
+
     Returns:
-      (is_valid: bool, video_id: str, error_message: str)
+        tuple[bool, str, str]:
+          - is_valid (bool): True if a valid 11-character ID was found.
+          - video_id (str): The extracted 11-char ID (e.g. 'dQw4w9WgXcQ').
+          - error_message (str): Friendly explanation if validation failed.
     """
     if not url or not isinstance(url, str):
         return False, "", "Please enter a valid YouTube URL."
@@ -64,6 +100,7 @@ def extract_youtube_video_id(url: str) -> tuple[bool, str, str]:
     if not cleaned_url:
         return False, "", "Please enter a YouTube URL."
 
+    # Ensure protocol scheme is present for urlparse
     if not cleaned_url.startswith(("http://", "https://")):
         cleaned_url = "https://" + cleaned_url
 
@@ -73,30 +110,36 @@ def extract_youtube_video_id(url: str) -> tuple[bool, str, str]:
         return False, "", "Malformed URL provided."
 
     netloc = parsed.netloc.lower()
+    # Remove port if specified in hostname (e.g., youtube.com:443)
     if ":" in netloc:
         netloc = netloc.split(":")[0]
 
+    # Security check: verify domain is authentic YouTube
     if netloc not in YOUTUBE_DOMAINS:
         return False, "", f"Unsupported domain '{netloc}'. Only YouTube links (youtube.com, youtu.be) are supported."
 
     video_id = ""
     path = parsed.path
 
+    # Format 1: youtu.be/VIDEO_ID
     if netloc in ("youtu.be", "www.youtu.be"):
         parts = [p for p in path.split("/") if p]
         if parts:
             video_id = parts[0]
     else:
+        # Format 2: youtube.com/watch?v=VIDEO_ID
         if path.startswith("/watch"):
             qs = parse_qs(parsed.query)
             v_list = qs.get("v")
             if v_list and len(v_list) > 0:
                 video_id = v_list[0]
+        # Format 3: youtube.com/embed/VIDEO_ID or youtube.com/shorts/VIDEO_ID
         elif path.startswith(("/embed/", "/shorts/", "/v/")):
             parts = [p for p in path.split("/") if p]
             if len(parts) >= 2:
                 video_id = parts[1]
         else:
+            # Fallback check query string for ?v=
             qs = parse_qs(parsed.query)
             v_list = qs.get("v")
             if v_list and len(v_list) > 0:
@@ -105,6 +148,7 @@ def extract_youtube_video_id(url: str) -> tuple[bool, str, str]:
     if not video_id:
         return False, "", "Could not find a valid YouTube video ID in the provided URL."
 
+    # Validate exact 11-character regex requirement
     if not VIDEO_ID_REGEX.match(video_id):
         return False, "", f"Invalid YouTube video ID '{video_id}'. YouTube video IDs must be exactly 11 characters."
 
@@ -113,11 +157,23 @@ def extract_youtube_video_id(url: str) -> tuple[bool, str, str]:
 
 def get_youtube_metadata(video_id: str) -> dict:
     """
-    Retrieves video metadata (title, author, thumbnail) using YouTube oEmbed.
-    Verifies if video is publicly accessible.
+    Retrieves video metadata (title, author, thumbnail) using the YouTube oEmbed API.
+
+    VIVA EXPLANATION:
+    Instead of requiring a paid/quota-limited YouTube Data API v3 key, we query
+    YouTube's public oEmbed service (`https://www.youtube.com/oembed`).
+    This returns the title and channel author in JSON, and confirms whether the video is public.
+
+    Parameters:
+        video_id (str): The 11-character YouTube video ID.
+
+    Returns:
+        dict: Metadata containing 'accessible' (bool), 'title' (str), 'author' (str),
+              'thumbnail' (str URL), and 'error' (str or None).
     """
     oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
     fallback_thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+
 
     metadata = {
         "accessible": True,
@@ -153,13 +209,25 @@ def get_youtube_metadata(video_id: str) -> dict:
 
 def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
     """
-    Fetches official or auto-generated captions for the given video ID.
-    Implements a multi-tiered fallback strategy:
-      1. Broad English variants (en, en-US, en-GB, en-CA, en-AU, en-IN)
-      2. Manual transcripts in English
-      3. Auto-generated transcripts in English
-      4. Any translatable transcript translated to English
-      5. Primary native transcript if translation is unsupported
+    Fetches official or auto-generated subtitle captions for a YouTube video.
+
+    VIVA EXPLANATION (CAPTION RETRIEVAL STRATEGY):
+    Downloading captions takes ~1 second and does not require running heavy deep learning models.
+    We implement a multi-tiered search:
+      Priority 1: Direct fetch in English variants (en, en-US, en-GB, en-CA, en-AU, en-IN).
+      Priority 2a: Manually uploaded English subtitles by the video creator (highest quality).
+      Priority 2b: Automatically generated speech recognition subtitles from YouTube in English.
+      Priority 2c: If only non-English captions exist, request automatic translation to English.
+      Priority 2d: Native language subtitles if translation is unavailable.
+
+    Parameters:
+        video_id (str): The 11-character YouTube video ID.
+        return_diagnostics (bool): If True, returns (segments, diagnostics_dict).
+
+    Returns:
+        list[dict] OR tuple[list[dict], dict]:
+          List of segments: [{"start": 10.5, "end": 14.2, "text": "..."}]
+          and optional diagnostics dict detailing status and reasons.
     """
     api = YouTubeTranscriptApi()
     raw_snippets = None
@@ -171,7 +239,7 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
         "is_generated": False
     }
 
-    # Priority 1: Direct fetch in English variants
+    # Priority 1: Direct fetch in English variants (fastest route)
     try:
         fetched = api.fetch(video_id, languages=["en", "en-US", "en-GB", "en-CA", "en-AU", "en-IN"])
         raw_snippets = fetched.to_raw_data()
@@ -183,6 +251,7 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
             "is_generated": False
         }
     except TranscriptsDisabled:
+        # Creator explicitly disabled captions on this video
         diagnostics = {
             "success": False,
             "reason": "disabled",
@@ -204,6 +273,7 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
         }
         logger.info("Video age-restricted for %s", video_id)
     except (IpBlocked, RequestBlocked):
+        # YouTube temporary rate limit or IP restriction
         diagnostics = {
             "success": False,
             "reason": "rate_limited",
@@ -213,7 +283,7 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
     except Exception as first_exc:
         logger.debug("Direct English fetch failed for %s (%s). Inspecting transcript list...", video_id, first_exc)
 
-        # Priority 2: Inspect available transcripts and select best fit
+        # Priority 2: Inspect all available caption tracks and select the best fit
         try:
             transcript_list = api.list(video_id)
             selected_transcript = None
@@ -307,6 +377,7 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
             return [], diagnostics
         return []
 
+    # Clean HTML entities (e.g. &amp;, &quot;) and format timestamps
     segments = []
     for item in raw_snippets:
         raw_text = item.get("text", "")
@@ -336,13 +407,31 @@ def fetch_youtube_captions(video_id: str, return_diagnostics: bool = False):
 
 def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
     """
-    Fallback method: Downloads permitted audio using yt-dlp to a temporary file
-    and transcribes with the local Whisper pipeline.
-    Configures explicit FFmpeg location and cleans up temp files immediately.
+    Fallback method: Downloads audio from YouTube using yt-dlp to a temporary file,
+    and transcribes it locally using OpenAI Whisper.
+
+    VIVA EXPLANATION (WHY WE NEED THIS FALLBACK):
+    Many valuable technical lectures on YouTube do NOT have closed captions or subtitles enabled.
+    Without this fallback, the system would fail.
+    With this fallback:
+      1. We use `yt-dlp` with options `format='bestaudio/best'` to download ONLY the audio track
+         (avoiding high-bandwidth video downloads, keeping files tiny ~5-15MB).
+      2. It uses our dynamically discovered FFmpeg to convert it into a standard MP3 in the OS temp directory.
+      3. We run our local Whisper model on this MP3 file to generate timestamped segments.
+      4. In the `finally:` block, the temporary MP3 file is deleted immediately to save disk space.
+
+    Parameters:
+        video_id (str): The 11-character YouTube video ID.
+        return_diagnostics (bool): If True, returns (segments, diagnostics_dict).
+
+    Returns:
+        list[dict] OR tuple[list[dict], dict]:
+          List of timestamped segments, with start/end seconds and text.
     """
     import yt_dlp
     from processing.transcription import transcribe_video, ensure_ffmpeg
 
+    # Configure FFmpeg location so yt-dlp's audio conversion postprocessor succeeds
     ffmpeg_ok, ffmpeg_path = ensure_ffmpeg()
     ffmpeg_dir = os.path.dirname(ffmpeg_path) if ffmpeg_ok else None
 
@@ -354,6 +443,7 @@ def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
         "transcribe_time": 0.0
     }
 
+    # Temporary download target in OS temp directory
     temp_dir = tempfile.gettempdir()
     output_template = os.path.join(temp_dir, f"yt_audio_{video_id}_%(id)s.%(ext)s")
 
@@ -383,6 +473,7 @@ def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
         video_url = f"https://www.youtube.com/watch?v={video_id}"
         logger.info("Downloading permitted audio for fallback transcription: %s", video_url)
 
+        # Step 1: Download audio track via yt-dlp
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             if info:
@@ -401,6 +492,7 @@ def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
                 return [], diagnostics
             return []
 
+        # Step 2: Run Whisper speech-to-text on the downloaded audio
         print(f"Running Whisper on downloaded audio: {target_audio_path}")
         start_tr = time.time()
         segments = transcribe_video(target_audio_path)
@@ -447,7 +539,7 @@ def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
         return []
 
     finally:
-        # Always clean up temporary audio files
+        # Step 3: Always clean up temporary audio files to keep disk clean
         if target_audio_path and os.path.exists(target_audio_path):
             try:
                 os.remove(target_audio_path)
@@ -458,12 +550,28 @@ def transcribe_youtube_audio(video_id: str, return_diagnostics: bool = False):
 
 def process_youtube_video(url: str, enable_audio_fallback: bool = True) -> dict:
     """
-    Main entrypoint for YouTube video processing:
-      1. Validates URL and extracts video ID safely.
-      2. Checks video accessibility and fetches metadata via oEmbed.
-      3. Attempts fast caption/transcript retrieval with granular diagnostics.
-      4. If captions unavailable, falls back to authorized Whisper audio transcription.
-      5. Returns specific, user-friendly diagnostic errors rather than generic notices.
+    Main orchestrator for YouTube video ingestion.
+
+    COMPLETE PIPELINE FLOW (EXPLAIN IN VIVA):
+    Step 1: Validates the URL structure and extracts the 11-char video ID.
+    Step 2: Fetches title, author, and thumbnail via YouTube oEmbed without requiring an API key.
+    Step 3: Fast Path - Attempts to fetch official captions via `fetch_youtube_captions()`.
+    Step 4: Fallback Path - If captions are missing, downloads audio via `yt-dlp` and transcribes with Whisper.
+    Step 5: Diagnostics - If both paths fail, classifies the error (rate limit, age restricted, private).
+    Step 6: Returns a standardized dictionary ready for storage and UI display.
+
+    Parameters:
+        url (str): Raw YouTube URL submitted by the user.
+        enable_audio_fallback (bool): Whether to invoke yt-dlp + Whisper if captions fail (default True).
+
+    Returns:
+        dict: Standardized result dictionary with:
+            - success (bool)
+            - video_id (str)
+            - title, author, thumbnail, duration, url, embed_url
+            - transcript_source ('captions' or 'whisper_audio')
+            - segments: [{"start": float, "end": float, "text": str}]
+            - error (str or None)
     """
     start_time = time.time()
     logger.info("Starting processing for YouTube URL: %s", url)
@@ -478,7 +586,7 @@ def process_youtube_video(url: str, enable_audio_fallback: bool = True) -> dict:
             "video_id": ""
         }
 
-    # 2. Metadata & accessibility check
+    # 2. Metadata & accessibility check via oEmbed
     meta = get_youtube_metadata(video_id)
     if not meta.get("accessible", True):
         return {
@@ -490,7 +598,7 @@ def process_youtube_video(url: str, enable_audio_fallback: bool = True) -> dict:
             "thumbnail": meta.get("thumbnail"),
         }
 
-    # 3. Attempt captions first
+    # 3. Attempt fast caption retrieval first
     caption_res = fetch_youtube_captions(video_id, return_diagnostics=True)
     if isinstance(caption_res, tuple) and len(caption_res) == 2:
         segments, caption_diag = caption_res
@@ -526,7 +634,7 @@ def process_youtube_video(url: str, enable_audio_fallback: bool = True) -> dict:
         cap_reason = caption_diag.get("reason", "unknown")
         aud_reason = audio_diag.get("reason", "none")
 
-        # Select the most accurate and actionable explanation
+        # Select the most accurate and actionable explanation for the user
         if cap_reason == "rate_limited" or aud_reason == "rate_limited":
             user_error = (
                 "YouTube access is temporarily rate-limited from your network. "

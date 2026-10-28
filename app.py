@@ -1,3 +1,30 @@
+"""
+app.py
+======
+VIVA / ARCHITECTURAL OVERVIEW:
+This is the core Flask application entry point for the Temporal Multimodal RAG platform (AetherLearn).
+
+Key Architecture to Explain in a Viva:
+1. Flask Web Application:
+   - Configures application settings, session secrets, upload directories, and database URIs.
+   - Registers modular Blueprints: `auth_bp` (authentication & onboarding) and `learning_bp` (dashboard, quizzes, paths).
+   - Injects the currently authenticated student into Jinja templates using `@app.context_processor`.
+2. Database Optimization:
+   - Sets SQLite Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and a 30-second busy timeout
+     (`PRAGMA busy_timeout=30000`) via SQLAlchemy event listeners to prevent database locking
+     during concurrent reads and writes.
+3. Multi-Video State Management:
+   - Maintains an in-memory dictionary `VIDEO_STORE` mapping `source_id` to video metadata and transcript segments.
+   - When a student is logged in, sessions are also persisted to the SQLite database
+     (`VideoLearningSession`), guaranteeing multi-user isolation.
+4. Core Video Pipeline Endpoints:
+   - `POST /process_youtube`: Extracts captions via `youtube_transcript_api` or runs `yt-dlp` + Whisper fallback.
+   - `POST /upload`: Saves uploaded media and transcribes speech using local OpenAI Whisper.
+   - `POST /ask`: Runs the custom Temporal RAG algorithm (probabilistic IDF keyword scoring + neighbor expansion)
+     and invokes the configured LLM (OpenAI, Gemini, Groq, or Ollama) to produce timestamped answers.
+   - `GET /health`: Lightweight system readiness check for process monitors and health probes.
+"""
+
 from flask import Flask, render_template, request, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
 
@@ -17,9 +44,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("app")
 
+# Allowed video and audio formats for local file upload
 ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".mp3", ".wav", ".m4a"}
 
-# Load local environment configuration (.env)
+# Load local environment configuration (.env) into os.environ
 _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 if os.path.exists(_env_path):
     try:
@@ -37,7 +65,7 @@ if os.path.exists(_env_path):
         pass
 
 app = Flask(__name__)
-# Use deterministic development secret or secure environment secret
+# Cryptographically sign client-side session cookies
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "temporal-rag-session-secret-key-2026"
 
 # =====================================
@@ -55,7 +83,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # =====================================
 
 db_path = os.path.join(BASE_DIR, "learning_platform.db")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or f"sqlite:///{db_path}"
+raw_db_url = (os.environ.get("DATABASE_URL") or "").strip()
+if not raw_db_url or raw_db_url == "sqlite:///learning_platform.db":
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = raw_db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "connect_args": {"timeout": 30},
@@ -67,6 +99,7 @@ init_db(app)
 
 with app.app_context():
     try:
+        # SQLite Write-Ahead Logging (WAL) concurrency listener
         @event.listens_for(db.engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             try:
@@ -82,11 +115,13 @@ with app.app_context():
 from routes.auth_routes import auth_bp
 from routes.learning_routes import learning_bp
 
+# Mount modular Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(learning_bp)
 
 @app.context_processor
 def inject_globals():
+    """Injects current_user into every Jinja template context automatically."""
     from auth.auth_manager import get_current_user
     return {
         "current_user": get_current_user()
@@ -96,7 +131,7 @@ def inject_globals():
 # =====================================
 # MULTI-VIDEO IN-MEMORY STATE STORE
 # =====================================
-# Maps source_id (e.g., 'yt_dQw4w9WgXcQ' or 'local_lecture.mp4') to its video metadata & transcript segments
+# Maps source_id (e.g. 'yt_dQw4w9WgXcQ' or 'local_lecture.mp4') to video metadata & transcript segments
 VIDEO_STORE = {}
 
 # Legacy global fallback for backward compatibility
@@ -106,8 +141,17 @@ current_filename = None
 
 def get_active_video(source_id=None):
     """
-    Retrieves video data by explicit source_id, session active ID, or latest stored video.
-    Checks authenticated user's database records first for multi-user data isolation.
+    Resolves the currently active video session and its transcript segments.
+    
+    Step-by-Step Viva Explanation:
+    1. Multi-User Database Priority: If a user is logged in, queries `VideoLearningSession`
+       for that specific student (`user_id`). This ensures data isolation between different students.
+    2. In-Memory Fallback: If not logged in (guest mode), checks `VIDEO_STORE` using `source_id`
+       or `session['current_video_id']`.
+    3. Most Recent Fallback: If no ID specified, returns the most recently analyzed video.
+
+    Returns:
+        dict | None: Dictionary with video metadata (id, type, title, url, segments) or None.
     """
     target_id = source_id or session.get("current_video_id")
     user_id = session.get("user_id")
@@ -710,7 +754,27 @@ def handle_not_found(e):
             "error": "Requested resource not found.",
             "error_code": "NOT_FOUND"
         }), 404
-    return render_template("base.html"), 404
+    return render_template(
+        "base.html",
+        page_title="Page Not Found",
+        error="The requested page could not be found. Please check the address or return to the dashboard."
+    ), 404
+
+
+@app.errorhandler(500)
+def handle_server_error(e):
+    logger.exception("Internal Server Error: %s", e)
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify({
+            "success": False,
+            "error": "An internal server error occurred.",
+            "error_code": "INTERNAL_SERVER_ERROR"
+        }), 500
+    return render_template(
+        "base.html",
+        page_title="Server Error",
+        error="An unexpected server error occurred. Please return to the dashboard or try again."
+    ), 500
 
 
 if __name__ == "__main__":

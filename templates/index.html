@@ -534,6 +534,7 @@
             background: rgba(255, 255, 255, 0.045);
             border: 1px solid rgba(255, 255, 255, 0.09);
         }
+        .question-result.hidden-initial { display: none; }
 
         .question-label { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
         .question-text { color: #e3e6f5; font-size: 16px; line-height: 1.6; }
@@ -589,9 +590,8 @@
 
         .answer-body {
             color: #f1f3fd;
-            font-size: 16.5px;
-            line-height: 1.7;
-            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.75;
             word-break: break-word;
         }
 
@@ -600,12 +600,148 @@
             font-weight: 600;
         }
 
-        .answer-body p {
-            margin-bottom: 12px;
+        .answer-body em {
+            color: #d2d8f8;
+            font-style: italic;
         }
 
-        .answer-body p:last-child {
+        .answer-p {
+            margin: 0 0 14px 0;
+            line-height: 1.75;
+        }
+
+        .answer-p:last-child {
             margin-bottom: 0;
+        }
+
+        .answer-list {
+            margin: 8px 0 16px 22px;
+            padding: 0;
+        }
+
+        .answer-list li {
+            margin-bottom: 8px;
+            line-height: 1.65;
+            color: #e4e7fb;
+        }
+
+        .answer-h2, .answer-h3, .answer-h4 {
+            font-family: var(--display);
+            color: #b8d4ff;
+            margin: 18px 0 10px 0;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .answer-h2 { font-size: 19px; }
+        .answer-h3 { font-size: 17px; }
+        .answer-h4 { font-size: 15.5px; }
+
+        .answer-example-callout {
+            margin: 14px 0;
+            padding: 14px 18px;
+            background: rgba(110, 168, 255, 0.08);
+            border-left: 3px solid var(--blue);
+            border-radius: 0 12px 12px 0;
+            font-size: 15px;
+            line-height: 1.65;
+            color: #e2e8ff;
+        }
+
+        .inline-time-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 9px;
+            margin: 0 3px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffd27a;
+            background: rgba(255, 179, 71, 0.12);
+            border: 1px solid rgba(255, 179, 71, 0.4);
+            cursor: pointer;
+            vertical-align: baseline;
+            transition: all 0.2s ease;
+        }
+
+        .inline-time-chip:hover {
+            background: rgba(255, 179, 71, 0.25);
+            border-color: #ffd27a;
+            transform: translateY(-1px);
+        }
+
+        .answer-inline-code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #67e8a9;
+        }
+
+        /* Loading Skeleton inside Answer Container */
+        .answer-loading-card {
+            margin-top: 20px;
+            padding: 24px 28px;
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(110, 168, 255, 0.09), rgba(155, 123, 255, 0.05));
+            border: 1px dashed rgba(130, 150, 255, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            animation: pulseGlow 1.8s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { border-color: rgba(130, 150, 255, 0.3); box-shadow: 0 0 10px rgba(110, 168, 255, 0.05); }
+            50% { border-color: rgba(130, 150, 255, 0.6); box-shadow: 0 0 20px rgba(110, 168, 255, 0.15); }
+        }
+
+        .loading-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--blue);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .loading-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(110, 168, 255, 0.3);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .skeleton-bar {
+            height: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+        }
+        .skeleton-bar.w-75 { width: 75%; }
+        .skeleton-bar.w-90 { width: 90%; }
+        .skeleton-bar.w-60 { width: 60%; }
+
+        .answer-error-card {
+            margin-top: 20px;
+            padding: 20px 24px;
+            border-radius: 18px;
+            background: rgba(255, 99, 132, 0.08);
+            border: 1px solid rgba(255, 99, 132, 0.3);
+            color: #ff9fb2;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         .time-actions {
@@ -818,17 +954,17 @@
                 Temporal<span>RAG</span>
             </a>
             <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-                <a href="/dashboard" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Dashboard</a>
-                <a href="/quiz/generator" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">AI Quiz</a>
-                <a href="/learning-path" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Path</a>
-                <a href="/skills" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Skills</a>
-                <a href="/courses" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Courses</a>
+                <a href="{{ url_for('learning_routes.dashboard') }}" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Dashboard</a>
+                <a href="{{ url_for('learning_routes.quiz_generator') }}" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">AI Quiz</a>
+                <a href="{{ url_for('learning_routes.learning_path_view') }}" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Path</a>
+                <a href="{{ url_for('learning_routes.skills_overview') }}" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Skills</a>
+                <a href="{{ url_for('learning_routes.courses_view') }}" style="color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;">Courses</a>
                 {% if current_user %}
-                <a href="/profile" style="color: var(--amber); text-decoration: none; font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 99px; background: rgba(255, 179, 71, 0.15); border: 1px solid rgba(255, 179, 71, 0.3);">
-                    👤 {{ current_user.full_name.split()[0] }}
+                <a href="{{ url_for('auth_routes.profile') }}" style="color: var(--amber); text-decoration: none; font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 99px; background: rgba(255, 179, 71, 0.15); border: 1px solid rgba(255, 179, 71, 0.3);">
+                    👤 {{ (current_user.full_name.split()[0]) if (current_user.full_name and current_user.full_name.split()) else (current_user.email.split('@')[0] if current_user.email else 'Profile') }}
                 </a>
                 {% else %}
-                <a href="/login" class="badge" style="text-decoration: none; color: #fff; background: rgba(99, 102, 241, 0.3); border-color: rgba(99, 102, 241, 0.5);">
+                <a href="{{ url_for('auth_routes.login') }}" class="badge" style="text-decoration: none; color: #fff; background: rgba(99, 102, 241, 0.3); border-color: rgba(99, 102, 241, 0.5);">
                     Log In / Sign Up
                 </a>
                 {% endif %}
@@ -991,7 +1127,7 @@
                         {% endif %}
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <a href="/quiz/generator" class="btn" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; text-decoration: none; font-size: 13px; padding: 7px 16px; border-radius: 99px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+                        <a href="{{ url_for('learning_routes.quiz_generator') }}" class="btn" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; text-decoration: none; font-size: 13px; padding: 7px 16px; border-radius: 99px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
                             ⚡ Generate Quiz from This Video
                         </a>
                         {% if video_type == "youtube" and youtube_id %}
@@ -1034,83 +1170,83 @@
                 Ask anything covered in the video. The AI retrieval system will locate the exact timestamp and context.
             </p>
 
-            <form id="askForm" action="/ask" method="POST" data-loading="Generating AI Answer" data-loading-text="Analyzing transcript evidence and synthesizing an answer...">
-                <input type="hidden" name="source_id" value="{{ source_id|default('') }}">
+            <form id="askForm" action="/ask" method="POST">
+                <input type="hidden" name="source_id" id="askSourceId" value="{{ source_id|default('') }}">
                 <div class="ask-row">
                     <input class="question-input" type="text" id="questionInput" name="question" placeholder="e.g. Explain the main concept discussed in this video" value="{{ question|default('') }}" required>
-                    <button class="btn" type="submit">Ask AI</button>
+                    <button class="btn" type="submit" id="askSubmitBtn">Ask AI</button>
                 </div>
             </form>
 
-            {% if question %}
-            <div class="question-result" id="questionResultArea">
+            <div class="question-result{% if not question %} hidden-initial{% endif %}" id="questionResultArea">
                 <div class="question-label">Your Question</div>
-                <div class="question-text">{{ question }}</div>
+                <div class="question-text" id="questionText">{{ question|default('') }}</div>
 
-                {% if answer %}
-                <div class="answer-box" id="answerBox" data-timestamp="{{ timestamp|default('') }}">
-                    <div class="answer-header">
-                        <div class="answer-title">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            Answer
-                        </div>
-                        {% if answer_mode == 'llm' %}
-                        <span class="answer-badge badge-ai">✦ AI Synthesized</span>
-                        {% elif answer_mode == 'fallback' %}
-                        <span class="answer-badge badge-fallback">Transcript Fallback</span>
-                        {% endif %}
-                    </div>
-
-                    <!-- PRIMARY FOCUS: Complete AI-generated explanation -->
-                    <div class="answer-body" id="answerBody" data-raw="{{ answer }}">{{ answer }}</div>
-
-                    <!-- VISUALLY SECONDARY: Optional Video Timestamps & Navigation Actions -->
-                    {% if timestamp and timestamp != "Not found" and timestamp != "Not available" %}
-                    <div class="time-actions">
-                        <div class="time-chip" title="Primary relevant timestamp">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            Timestamp: {{ timestamp }}
-                        </div>
-
-                        <button type="button" class="btn" onclick="jumpToAnswer()">
-                            Jump to timestamp in video ↳
-                        </button>
-
-                        {% if youtube_timestamp_url %}
-                        <a class="btn ghost external-link" href="{{ youtube_timestamp_url }}" target="_blank" rel="noopener noreferrer">
-                            Open on YouTube at timestamp [↗]
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
-                    <!-- RELEVANT CONTEXT: Supporting Transcript Excerpts -->
-                    {% if sources and sources|length > 0 %}
-                    <div class="sources-section">
-                        <details class="sources-details" open>
-                            <summary>
-                                <span>Supporting Transcript Evidence ({{ sources|length }} excerpts)</span>
-                                <span class="sources-toggle-hint">Click to collapse/expand</span>
-                            </summary>
-                            <div class="sources-list">
-                                {% for src in sources %}
-                                <div class="source-card" onclick="seekToSeconds({{ src.start }})" title="Jump to {{ "%.2f"|format(src.start) }}s in video">
-                                    <div class="source-card-header">
-                                        <span class="source-card-ts">⏱ {{ "%.2f"|format(src.start) }}s – {{ "%.2f"|format(src.end) }}s</span>
-                                        <span class="source-card-hint">Jump to video ↳</span>
-                                    </div>
-                                    <p class="source-card-text">"{{ src.text }}"</p>
-                                </div>
-                                {% endfor %}
+                <div id="answerContainer">
+                    {% if answer %}
+                    <div class="answer-box" id="answerBox" data-timestamp="{{ timestamp|default('') }}" data-start="{{ start|default('') }}" data-end="{{ end|default('') }}">
+                        <div class="answer-header">
+                            <div class="answer-title">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Answer
                             </div>
-                        </details>
+                            {% if answer_mode == 'llm' %}
+                            <span class="answer-badge badge-ai">✦ AI Synthesized</span>
+                            {% elif answer_mode == 'fallback' %}
+                            <span class="answer-badge badge-fallback">Transcript Fallback</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- PRIMARY FOCUS: Complete AI-generated explanation -->
+                        <div class="answer-body" id="answerBody" data-raw="{{ answer }}">{{ answer }}</div>
+
+                        <!-- VISUALLY SECONDARY: Optional Video Timestamps & Navigation Actions -->
+                        {% if timestamp and timestamp != "Not found" and timestamp != "Not available" %}
+                        <div class="time-actions" id="timeActions">
+                            <div class="time-chip" title="Primary relevant timestamp">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                Timestamp: {{ timestamp }}
+                            </div>
+
+                            <button type="button" class="btn" id="jumpToAnswerBtn" onclick="jumpToAnswer()" data-start="{{ start|default('') }}">
+                                Jump to timestamp in video ↳
+                            </button>
+
+                            {% if youtube_timestamp_url %}
+                            <a class="btn ghost external-link" id="youtubeTimestampLink" href="{{ youtube_timestamp_url }}" target="_blank" rel="noopener noreferrer">
+                                Open on YouTube at timestamp [↗]
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- RELEVANT CONTEXT: Supporting Transcript Evidence -->
+                        {% if sources and sources|length > 0 %}
+                        <div class="sources-section" id="sourcesSection">
+                            <details class="sources-details" open>
+                                <summary>
+                                    <span>Supporting Transcript Evidence ({{ sources|length }} excerpts)</span>
+                                    <span class="sources-toggle-hint">Click to collapse/expand</span>
+                                </summary>
+                                <div class="sources-list" id="sourcesList">
+                                    {% for src in sources %}
+                                    <div class="source-card" onclick="seekToSeconds({{ src.start }})" title="Jump to {{ src.timestamp_str if src.timestamp_str else ("%.2f"|format(src.start) ~ "s") }} in video" data-start="{{ src.start }}">
+                                        <div class="source-card-header">
+                                            <span class="source-card-ts">⏱ {{ src.timestamp_str if src.timestamp_str else ("%.2f"|format(src.start) ~ "s – " ~ "%.2f"|format(src.end) ~ "s") }}</span>
+                                            <span class="source-card-hint">Jump to video ↳</span>
+                                        </div>
+                                        <p class="source-card-text">"{{ src.text }}"</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                        </div>
+                        {% endif %}
+
                     </div>
                     {% endif %}
-
                 </div>
-                {% endif %}
             </div>
-            {% endif %}
 
         </section>
 
@@ -1215,8 +1351,13 @@
             var res = validateYouTubeURL(val);
             if (!res.valid) {
                 e.preventDefault();
-                ytHint.textContent = res.error;
-                ytHint.style.display = "block";
+                e.stopImmediatePropagation();
+                if (overlay) overlay.hidden = true;
+                if (ytHint) {
+                    ytHint.textContent = res.error;
+                    ytHint.style.display = "block";
+                }
+                if (ytInput) ytInput.focus();
                 return false;
             }
         });
@@ -1365,22 +1506,142 @@
         }
     }
 
-    /* PARSE RANGE HELPER */
-    function parseRange(text) {
-        var nums = (text || "").match(/\d+(?:\.\d+)?/g);
-        if (!nums) return null;
-        var start = parseFloat(nums[0]);
-        var end = nums.length > 1 ? parseFloat(nums[1]) : start + 2.0;
-        return isNaN(start) ? null : { start: start, end: end };
+    /* ============================================================
+       TIME FORMATTING & TIMESTAMP NAVIGATION
+       ============================================================ */
+    function parseTimeToSeconds(text) {
+        if (!text) return null;
+        text = String(text).trim();
+        // Match MM:SS or HH:MM:SS format (e.g. "06:34" or "06:34–06:50" or "01:06:34")
+        var colonMatch = text.match(/(?:(\d{1,2}):)?(\d{1,2}):(\d{2})/);
+        if (colonMatch) {
+            var hrs = colonMatch[1] ? parseInt(colonMatch[1], 10) : 0;
+            var mins = parseInt(colonMatch[2], 10);
+            var secs = parseInt(colonMatch[3], 10);
+            return (hrs * 3600) + (mins * 60) + secs;
+        }
+        // Match explicit seconds notation: e.g. "394.20s" or "394.20"
+        var secMatch = text.match(/(\d+(?:\.\d+)?)/);
+        if (secMatch) {
+            var val = parseFloat(secMatch[1]);
+            return isNaN(val) ? null : val;
+        }
+        return null;
+    }
+
+    function formatSecondsToTime(seconds) {
+        if (seconds === null || seconds === undefined || isNaN(seconds)) return "";
+        var total = Math.max(0, Math.round(Number(seconds)));
+        var hrs = Math.floor(total / 3600);
+        var mins = Math.floor((total % 3600) / 60);
+        var secs = total % 60;
+        function pad(n) { return (n < 10 ? "0" : "") + n; }
+        if (hrs > 0) {
+            return pad(hrs) + ":" + pad(mins) + ":" + pad(secs);
+        }
+        return pad(mins) + ":" + pad(secs);
+    }
+
+    function formatTimestampDisplay(start, end) {
+        var s = formatSecondsToTime(start);
+        if (!s) return "Not available";
+        if (end !== null && end !== undefined && Number(end) > Number(start)) {
+            var e = formatSecondsToTime(end);
+            return s + "–" + e;
+        }
+        return s;
     }
 
     function jumpToAnswer() {
         var box = document.getElementById("answerBox");
         if (!box) return;
-        var range = parseRange(box.dataset.timestamp);
-        if (range) {
-            seekToSeconds(range.start);
+        // Priority 1: Exact sub-second start attribute
+        if (box.dataset.start && !isNaN(parseFloat(box.dataset.start))) {
+            seekToSeconds(parseFloat(box.dataset.start));
+            return;
         }
+        var btn = document.getElementById("jumpToAnswerBtn");
+        if (btn && btn.dataset.start && !isNaN(parseFloat(btn.dataset.start))) {
+            seekToSeconds(parseFloat(btn.dataset.start));
+            return;
+        }
+        // Priority 2: Parse formatted timestamp string
+        var parsed = parseTimeToSeconds(box.dataset.timestamp);
+        if (parsed !== null && !isNaN(parsed)) {
+            seekToSeconds(parsed);
+        }
+    }
+
+    /* ============================================================
+       MARKDOWN RENDERING WITH INTERACTIVE TIMESTAMPS
+       ============================================================ */
+    function renderMarkdownToHtml(markdown) {
+        if (!markdown) return "";
+
+        var div = document.createElement("div");
+        div.textContent = markdown;
+        var text = div.innerHTML;
+
+        // 1. Headers (###, ##, #)
+        text = text.replace(/^###\s+(.+)$/gm, '<h4 class="answer-h4">$1</h4>');
+        text = text.replace(/^##\s+(.+)$/gm, '<h3 class="answer-h3">$1</h3>');
+        text = text.replace(/^#\s+(.+)$/gm, '<h2 class="answer-h2">$1</h2>');
+
+        // 2. Bold and italic
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+
+        // 3. Inline code
+        text = text.replace(/`([^`]+)`/g, '<code class="answer-inline-code">$1</code>');
+
+        // 4. Interactive Timestamp Citations
+        // Matches e.g. [06:34–06:50], [06:34], [394.20s – 409.84s], (Timestamp: 06:34–06:50)
+        text = text.replace(/(?:\[|\()(?:\s*(?:Timestamp evidence|Supporting Timestamp|Timestamp)?\s*[:\-]?\s*)?((?:(?:\d{1,2}:)?\d{1,2}:\d{2}(?:\s*[\u2013\u2014\-to]+\s*(?:\d{1,2}:)?\d{1,2}:\d{2})?)|(?:\d+(?:\.\d+)?\s*s\s*[\u2013\u2014\-to]+\s*\d+(?:\.\d+)?\s*s))(?:\s*\]|\))/gi, function(match, timeStr) {
+            var sec = parseTimeToSeconds(timeStr);
+            if (sec !== null && !isNaN(sec)) {
+                return '<button type="button" class="inline-time-chip" onclick="seekToSeconds(' + sec + ')" title="Jump to ' + timeStr + ' in video">⏱ ' + timeStr + '</button>';
+            }
+            return match;
+        });
+
+        // 5. Lists & Paragraphs
+        var lines = text.split("\n");
+        var htmlLines = [];
+        var inUl = false;
+        var inOl = false;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+
+            var ulMatch = line.match(/^[\*\-•]\s+(.+)$/);
+            var olMatch = line.match(/^(\d+)\.\s+(.+)$/);
+
+            if (ulMatch) {
+                if (inOl) { htmlLines.push("</ol>"); inOl = false; }
+                if (!inUl) { htmlLines.push('<ul class="answer-list">'); inUl = true; }
+                htmlLines.push('<li>' + ulMatch[1] + '</li>');
+            } else if (olMatch) {
+                if (inUl) { htmlLines.push("</ul>"); inUl = false; }
+                if (!inOl) { htmlLines.push('<ol class="answer-list">'); inOl = true; }
+                htmlLines.push('<li>' + olMatch[2] + '</li>');
+            } else {
+                if (inUl) { htmlLines.push("</ul>"); inUl = false; }
+                if (inOl) { htmlLines.push("</ol>"); inOl = false; }
+                if (line) {
+                    if (line.startsWith("<h2") || line.startsWith("<h3") || line.startsWith("<h4")) {
+                        htmlLines.push(line);
+                    } else if (line.startsWith("<strong>Example:") || line.startsWith("Example:") || line.toLowerCase().startsWith("for example:")) {
+                        htmlLines.push('<div class="answer-example-callout">' + line + '</div>');
+                    } else {
+                        htmlLines.push('<p class="answer-p">' + line + '</p>');
+                    }
+                }
+            }
+        }
+        if (inUl) htmlLines.push("</ul>");
+        if (inOl) htmlLines.push("</ol>");
+
+        return htmlLines.join("\n");
     }
 
     function formatAnswerMarkup() {
@@ -1388,19 +1649,203 @@
         if (!el) return;
         var raw = el.getAttribute("data-raw") || el.textContent || "";
         if (!raw) return;
-
-        var temp = document.createElement("div");
-        temp.textContent = raw;
-        var safe = temp.innerHTML;
-
-        // Render markdown bold, italics, and inline code safely
-        safe = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        safe = safe.replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
-        safe = safe.replace(/`([^`]+)`/g, "<code style='background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;'>$1</code>");
-
-        el.innerHTML = safe;
+        el.innerHTML = renderMarkdownToHtml(raw);
     }
     formatAnswerMarkup();
+
+    /* ============================================================
+       ASYNCHRONOUS QUESTION SUBMISSION (NO SCROLL JUMP)
+       ============================================================ */
+    (function initAskForm() {
+        var form = document.getElementById("askForm");
+        var input = document.getElementById("questionInput");
+        var btn = document.getElementById("askSubmitBtn") || (form ? form.querySelector("button[type='submit']") : null);
+        var resultArea = document.getElementById("questionResultArea");
+        var qTextEl = document.getElementById("questionText");
+        var ansContainer = document.getElementById("answerContainer");
+
+        if (!form) return;
+
+        var isAsking = false;
+
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            var question = input ? input.value.trim() : "";
+            if (!question || isAsking) return;
+
+            var sourceIdEl = document.getElementById("askSourceId") || form.querySelector("input[name='source_id']");
+            var sourceId = sourceIdEl ? sourceIdEl.value : "";
+
+            isAsking = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.dataset.origHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;"></span>Thinking...';
+            }
+            if (input) input.disabled = true;
+
+            // Make result area visible
+            if (resultArea) {
+                resultArea.classList.remove("hidden-initial");
+                resultArea.style.display = "block";
+            }
+            if (qTextEl) qTextEl.textContent = question;
+
+            // Show sleek loading skeleton inside answer container
+            if (ansContainer) {
+                ansContainer.innerHTML =
+                    '<div class="answer-loading-card">' +
+                        '<div class="loading-header">' +
+                            '<div class="loading-spinner"></div>' +
+                            '<span>Analyzing transcript & synthesizing student-friendly answer...</span>' +
+                        '</div>' +
+                        '<div class="skeleton-bar w-90"></div>' +
+                        '<div class="skeleton-bar w-75"></div>' +
+                        '<div class="skeleton-bar w-60"></div>' +
+                    '</div>';
+            }
+
+            // Smoothly scroll only if result area is below visible screen (NEVER jump to top!)
+            if (resultArea) {
+                var rect = resultArea.getBoundingClientRect();
+                if (rect.bottom > window.innerHeight || rect.top < 0) {
+                    resultArea.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }
+            }
+
+            fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    question: question,
+                    source_id: sourceId
+                })
+            })
+            .then(function(resp) {
+                return resp.json().then(function(data) {
+                    return { ok: resp.ok, status: resp.status, data: data };
+                });
+            })
+            .then(function(res) {
+                if (!ansContainer) return;
+
+                if (!res.ok || !res.data.success) {
+                    var errMsg = (res.data && res.data.error) || (res.data && res.data.answer) || "Could not generate an answer. Please verify a video is loaded and try again.";
+                    ansContainer.innerHTML =
+                        '<div class="answer-error-card">' +
+                            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
+                            '<div><strong>Question Error:</strong> ' + errMsg + '</div>' +
+                        '</div>';
+                    return;
+                }
+
+                var d = res.data;
+                var html = '';
+                var isLLM = d.answer_mode === "llm";
+                var isFallback = d.answer_mode === "fallback";
+
+                var badgeClass = isLLM ? "badge-ai" : "badge-fallback";
+                var badgeLabel = isLLM ? "✦ AI Synthesized" : "Transcript Fallback";
+
+                var tsDisplay = d.timestamp || "Not available";
+                var startVal = d.start !== null && d.start !== undefined ? d.start : "";
+                var endVal = d.end !== null && d.end !== undefined ? d.end : "";
+
+                html += '<div class="answer-box" id="answerBox" data-timestamp="' + tsDisplay + '" data-start="' + startVal + '" data-end="' + endVal + '">';
+                html += '  <div class="answer-header">';
+                html += '    <div class="answer-title">';
+                html += '      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+                html += '      Answer';
+                html += '    </div>';
+                if (isLLM || isFallback) {
+                    html += '    <span class="answer-badge ' + badgeClass + '">' + badgeLabel + '</span>';
+                }
+                html += '  </div>';
+
+                // Answer body with parsed markdown
+                var parsedBody = renderMarkdownToHtml(d.answer || "");
+                html += '  <div class="answer-body" id="answerBody" data-raw="' + (d.answer || "").replace(/"/g, "&quot;") + '">' + parsedBody + '</div>';
+
+                // Time actions
+                if (tsDisplay && tsDisplay !== "Not found" && tsDisplay !== "Not available") {
+                    html += '  <div class="time-actions" id="timeActions">';
+                    html += '    <div class="time-chip" title="Primary relevant timestamp">';
+                    html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+                    html += '      Timestamp: ' + tsDisplay;
+                    html += '    </div>';
+                    html += '    <button type="button" class="btn" id="jumpToAnswerBtn" onclick="jumpToAnswer()" data-start="' + startVal + '">';
+                    html += '      Jump to timestamp in video ↳';
+                    html += '    </button>';
+                    if (d.youtube_url) {
+                        html += '    <a class="btn ghost external-link" id="youtubeTimestampLink" href="' + d.youtube_url + '" target="_blank" rel="noopener noreferrer">';
+                        html += '      Open on YouTube at timestamp [↗]';
+                        html += '    </a>';
+                    }
+                    html += '  </div>';
+                }
+
+                // Supporting sources
+                if (d.sources && d.sources.length > 0) {
+                    html += '  <div class="sources-section" id="sourcesSection">';
+                    html += '    <details class="sources-details" open>';
+                    html += '      <summary>';
+                    html += '        <span>Supporting Transcript Evidence (' + d.sources.length + ' excerpts)</span>';
+                    html += '        <span class="sources-toggle-hint">Click to collapse/expand</span>';
+                    html += '      </summary>';
+                    html += '      <div class="sources-list" id="sourcesList">';
+                    for (var sIdx = 0; sIdx < d.sources.length; sIdx++) {
+                        var src = d.sources[sIdx];
+                        var srcTs = src.timestamp_str || formatTimestampDisplay(src.start, src.end);
+                        html += '        <div class="source-card" onclick="seekToSeconds(' + src.start + ')" title="Jump to ' + srcTs + ' in video" data-start="' + src.start + '">';
+                        html += '          <div class="source-card-header">';
+                        html += '            <span class="source-card-ts">⏱ ' + srcTs + '</span>';
+                        html += '            <span class="source-card-hint">Jump to video ↳</span>';
+                        html += '          </div>';
+                        html += '          <p class="source-card-text">"' + src.text + '"</p>';
+                        html += '        </div>';
+                    }
+                    html += '      </div>';
+                    html += '    </details>';
+                    html += '  </div>';
+                }
+
+                html += '</div>';
+
+                ansContainer.innerHTML = html;
+
+                // If the answer is below the visible area, gently scroll to keep it in view
+                var boxEl = document.getElementById("answerBox");
+                if (boxEl) {
+                    var bRect = boxEl.getBoundingClientRect();
+                    if (bRect.bottom > window.innerHeight || bRect.top < 0) {
+                        boxEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }
+                }
+            })
+            .catch(function(err) {
+                console.error("[Ask AI Error]", err);
+                if (ansContainer) {
+                    ansContainer.innerHTML =
+                        '<div class="answer-error-card">' +
+                            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
+                            '<div><strong>Connection Error:</strong> Network connection failed. Please check your connection and try again.</div>' +
+                        '</div>';
+                }
+            })
+            .finally(function() {
+                isAsking = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.origHtml || "Ask AI";
+                }
+                if (input) input.disabled = false;
+            });
+        });
+    })();
 
     /* PLAYBACK TRACKER & ACTIVE SEGMENT HIGHLIGHTER */
     function startPlaybackTracker() {
@@ -1476,9 +1921,12 @@
     /* LOADING OVERLAYS */
     var overlay = document.getElementById("overlay");
     document.querySelectorAll("form[data-loading]").forEach(function(form) {
-        form.addEventListener("submit", function() {
-            document.getElementById("overlayTitle").textContent = form.dataset.loading || "Processing";
-            document.getElementById("overlayText").textContent = form.dataset.loadingText || "Please wait...";
+        form.addEventListener("submit", function(e) {
+            if (e.defaultPrevented) return;
+            var tEl = document.getElementById("overlayTitle");
+            var dEl = document.getElementById("overlayText");
+            if (tEl) tEl.textContent = form.dataset.loading || "Processing";
+            if (dEl) dEl.textContent = form.dataset.loadingText || "Please wait...";
             if (overlay) overlay.hidden = false;
         });
     });

@@ -1,8 +1,33 @@
 """
 learning/skill_tracker.py
+=========================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module implements an empirical, transparent skill tracking and mastery estimation
+engine for AetherLearn students.
 
-Transparent skill estimation, confidence rating, trend tracking,
-and post-quiz revision recommendations based on empirical performance.
+Key Concepts to Explain in a Viva:
+1. Why Not Just Simple Percentage?
+   - A student who answers 1 question correctly out of 1 has 100% accuracy, but we cannot
+     be statistically confident they have mastered the entire topic.
+   - We calculate a dual-metric profile for each skill:
+     a) `estimated_proficiency` (0-100%): Weighted rolling mastery.
+     b) `confidence_score` (0.0-1.0): Sample-size confidence (<5 questions = low,
+        5-14 questions = medium, 15+ questions = high).
+2. Difficulty-Weighted Rolling Accuracy Formula:
+   - Hard questions receive a 1.1x multiplier; easy questions receive 0.9x.
+   - When updating proficiency, we blend historical performance and recent performance:
+     `new_proficiency = (cumulative_accuracy * 0.70) + (recent_accuracy * difficulty_weight * 0.30)`.
+   - This 70/30 weighting ensures that a single bad quiz doesn't destroy a student's score,
+     while still rewarding recent progress.
+3. Trend Detection:
+   - Compares previous proficiency to new proficiency:
+     - Delta >= +4.0% -> "improving"
+     - Delta <= -4.0% -> "declining"
+     - Otherwise -> "stable"
+4. Temporal Grounding in Revision:
+   - Identifies incorrect questions and surfaces their exact video timestamps
+     (`source_start`, `source_end`) so the student can jump directly back to the
+     video explanation to review the concept.
 """
 
 from datetime import datetime
@@ -24,10 +49,13 @@ logger = logging.getLogger("learning.skill_tracker")
 
 def calculate_confidence_score(attempted_count: int) -> float:
     """
-    Computes statistical confidence in a skill estimate based on sample size:
-      - 0 to 4 questions: low confidence (0.1 to 0.4)
-      - 5 to 14 questions: medium confidence (0.5 to 0.75)
-      - 15+ questions: high confidence (0.8 to 1.0)
+    Computes statistical confidence in a skill estimate based on sample size.
+    
+    Viva Explanation:
+    - 0 questions: 0.0 confidence (no data).
+    - 1 to 4 questions: Low confidence (0.1 to 0.4) - insufficient sample size.
+    - 5 to 14 questions: Medium confidence (0.5 to 0.75) - reasonable indicator.
+    - 15+ questions: High confidence (0.8 to 0.98 asymptote) - statistically reliable.
     """
     if attempted_count <= 0:
         return 0.0
@@ -36,18 +64,25 @@ def calculate_confidence_score(attempted_count: int) -> float:
     elif attempted_count < 15:
         return round(0.5 + ((attempted_count - 5) / 10.0) * 0.28, 2)
     else:
-        # Asymptote towards 0.98
+        # Asymptote towards 0.98 as sample size increases
         return round(min(0.8 + ((attempted_count - 15) / 35.0) * 0.18, 0.98), 2)
 
 
 def update_skills_from_attempt(user_id: int, attempt_id: int) -> List[UserSkill]:
     """
-    Updates the learner's skill records after a completed quiz attempt:
-      - Aggregates questions answered per topic/skill
-      - Updates cumulative correct & attempted counts
-      - Computes rolling accuracy adjusted for difficulty
-      - Calculates confidence score based on sample size
-      - Tracks trend (improving, declining, stable)
+    Updates the learner's skill records after a completed quiz attempt.
+    
+    Step-by-Step Viva Explanation:
+    1. Fetches the `QuizAttempt` and iterates through its `responses`.
+    2. Groups responses by question topic/tag.
+    3. Factors in difficulty weighting: Hard questions = 1.1x, Easy = 0.9x, Medium = 1.0x.
+    4. Computes rolling estimate: 70% cumulative historical accuracy + 30% recent weighted accuracy.
+    5. Re-evaluates sample-size confidence via `calculate_confidence_score()`.
+    6. Identifies performance trend ("improving", "declining", or "stable") based on a 4% threshold.
+    7. Updates `last_assessed_at` timestamp and commits to SQLite.
+
+    Returns:
+        List[UserSkill]: List of updated or created UserSkill ORM records.
     """
     attempt = db.session.get(QuizAttempt, attempt_id)
     if not attempt or attempt.user_id != user_id:
@@ -92,14 +127,14 @@ def update_skills_from_attempt(user_id: int, attempt_id: int) -> List[UserSkill]
             )
             db.session.add(skill)
 
-        # Update counts
+        # Update cumulative attempt counts
         skill.attempted_count += stats["attempted"]
         skill.correct_count += stats["correct"]
 
-        # Base accuracy
+        # Base raw accuracy
         raw_accuracy = (skill.correct_count / skill.attempted_count) * 100.0
 
-        # Weighted recent adjustment
+        # Weighted recent performance adjustment
         avg_weight = sum(stats["difficulty_weights"]) / len(stats["difficulty_weights"])
         recent_acc = (stats["correct"] / stats["attempted"]) * 100.0
 
@@ -112,7 +147,7 @@ def update_skills_from_attempt(user_id: int, attempt_id: int) -> List[UserSkill]
         skill.estimated_proficiency = max(0.0, min(100.0, round(new_proficiency, 1)))
         skill.confidence_score = calculate_confidence_score(skill.attempted_count)
 
-        # Determine trend
+        # Determine trend based on >= 4.0% change threshold
         if prev_proficiency is not None:
             diff_prof = skill.estimated_proficiency - prev_proficiency
             if diff_prof >= 4.0:
@@ -133,15 +168,25 @@ def update_skills_from_attempt(user_id: int, attempt_id: int) -> List[UserSkill]
 
 
 def get_user_skills(user_id: int) -> List[Dict[str, Any]]:
-    """Returns a formatted list of all tracked skills for a user."""
+    """
+    Returns a sorted list of all tracked skills for a user.
+    
+    Viva Explanation:
+    - Queries all `UserSkill` records for the given user, ordered by estimated proficiency descending.
+    - Serializes them into JSON-friendly dictionaries using `s.to_dict()`.
+    """
     skills = UserSkill.query.filter_by(user_id=user_id).order_by(UserSkill.estimated_proficiency.desc()).all()
     return [s.to_dict() for s in skills]
 
 
 def get_strong_and_weak_skills(user_id: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Separates skills into Strong (proficiency >= 70% and confidence != 'low')
-    and Needs Improvement (proficiency < 60%).
+    Categorizes skills into Strong and Needs Improvement.
+    
+    Viva Criteria:
+    - Strong: Estimated proficiency >= 70%.
+    - Needs Improvement: Estimated proficiency < 65%.
+    - Used by the student dashboard to display skill badges and targeted revision suggestions.
     """
     all_skills = UserSkill.query.filter_by(user_id=user_id).all()
     strong = []
@@ -154,7 +199,7 @@ def get_strong_and_weak_skills(user_id: int) -> Tuple[List[Dict[str, Any]], List
         elif s.estimated_proficiency < 65.0:
             weak.append(d)
 
-    # Sort
+    # Sort strong skills descending, weak skills ascending (most critical gap first)
     strong.sort(key=lambda x: x["estimated_proficiency"], reverse=True)
     weak.sort(key=lambda x: x["estimated_proficiency"])
     return strong, weak
@@ -162,10 +207,20 @@ def get_strong_and_weak_skills(user_id: int) -> Tuple[List[Dict[str, Any]], List
 
 def generate_post_quiz_recommendations(user_id: int, attempt_id: int) -> Dict[str, Any]:
     """
-    Derives actionable learning recommendations grounded in the attempt results:
-      - Concepts that need revision (with video timestamps if available)
-      - Recommended next quiz topic and difficulty
-      - Explicit explanations citing empirical quiz accuracy
+    Derives actionable learning recommendations grounded in the attempt results.
+    
+    Step-by-Step Viva Explanation:
+    1. Gathers all questions the student answered incorrectly on this attempt.
+    2. Builds a revision concept list including the correct answer, explanation, and
+       video source start/end timestamps so the student can jump directly to that point in the lecture.
+    3. Adapts recommended next difficulty:
+       - Score >= 85%: Suggests "hard" (ready for advanced challenges).
+       - Score 60-84%: Suggests "medium" (consolidating intermediate skills).
+       - Score < 60%: Suggests "easy" (foundational review needed).
+    4. Provides transparent, explainable feedback citing exact percentages.
+
+    Returns:
+        Dict: Recommendation payload containing revision concepts, weak topics, and next difficulty.
     """
     attempt = db.session.get(QuizAttempt, attempt_id)
     if not attempt or attempt.user_id != user_id:

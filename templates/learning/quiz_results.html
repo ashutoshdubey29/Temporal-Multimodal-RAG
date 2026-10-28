@@ -120,13 +120,29 @@
         </div>
 
         <h4 style="font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--odoo-text-primary); margin-bottom: 14px;">
-          Question {{ loop.index }}: {{ resp.question_text }}
+          Question {{ loop.index }}: {{ resp.question_text or resp.question or 'Question Review' }}
         </h4>
 
         <!-- Options Comparison -->
         <div style="display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 14px;">
           {% for letter in ['A', 'B', 'C', 'D'] %}
-          {% set opt_text = resp.options.get(letter, '') %}
+          {% set opt_text = '' %}
+          {% if resp.options is mapping or resp.options.get is defined %}
+            {% set opt_text = resp.options.get(letter, '') %}
+          {% elif resp.options is iterable and resp.options is not string %}
+            {% for item in resp.options %}
+              {% if item is mapping and item.value == letter %}
+                {% set opt_text = item.label %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {% if not opt_text %}
+            {% if letter == 'A' %}{% set opt_text = resp.option_a %}
+            {% elif letter == 'B' %}{% set opt_text = resp.option_b %}
+            {% elif letter == 'C' %}{% set opt_text = resp.option_c %}
+            {% elif letter == 'D' %}{% set opt_text = resp.option_d %}
+            {% endif %}
+          {% endif %}
           {% set is_selected = (resp.selected_option == letter) %}
           {% set is_correct_opt = (resp.correct_option == letter) %}
           <div style="padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; border: 1px solid {% if is_correct_opt %}rgba(33, 134, 91, 0.35){% elif is_selected and not is_correct_opt %}rgba(196, 61, 75, 0.35){% else %}var(--odoo-border){% endif %}; background-color: {% if is_correct_opt %}var(--odoo-success-bg){% elif is_selected and not is_correct_opt %}var(--odoo-error-bg){% else %}#FFFFFF{% endif %};">

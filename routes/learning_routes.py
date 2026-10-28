@@ -1,13 +1,21 @@
 """
 routes/learning_routes.py
-
-Main learning platform routes:
-  - Dashboard with authentic progress metrics & streaks
-  - AI Quiz Generator, taking, and results review
-  - Skill tracker overview
-  - Course recommendations & catalogue
-  - Interactive learning paths & study planner
-  - Learning history
+=========================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module defines the primary learning application routes for authenticated students:
+1. Student Dashboard (`/dashboard`):
+   - Aggregates genuine study metrics: daily streaks, quizzes completed, average score,
+     strong/weak skills, upcoming milestones, and explainable recommendations.
+2. AI Quiz Generator & Quiz Player (`/quiz/generator`, `/quiz/<id>`, `/quiz/<id>/submit`):
+   - Generates MCQs from video transcripts or topics.
+   - CRITICAL SECURITY: When a student takes a quiz, questions are rendered with
+     `include_answer=False` so students cannot inspect client-side code to find answers.
+   - Scoring is performed authoritatively on the server upon submission.
+3. Post-Quiz Feedback & Explanations (`/quiz/attempt/<id>`):
+   - Shows full breakdown of student choices vs correct answers, educational explanations,
+     and clickable video timestamps to jump directly to where the concept was taught.
+4. Adaptive Roadmap & Study Planner (`/learning-path`, `/courses`, `/skills`):
+   - Shows student mastery, course recommendations, and milestone pacing.
 """
 
 from datetime import datetime, timedelta
@@ -54,8 +62,14 @@ learning_bp = Blueprint("learning_routes", __name__)
 
 def calculate_user_streak(user_id: int) -> int:
     """
-    Computes genuine daily learning streak (consecutive calendar days with activity).
-    Considers quiz submissions and video learning sessions.
+    Computes genuine daily learning streak (consecutive calendar days with active learning).
+    
+    Viva Explanation:
+    - Queries timestamps of `QuizAttempt` and `VideoLearningSession`.
+    - Normalizes timestamps to unique calendar dates (UTC).
+    - Checks if the user was active today or yesterday (allows maintaining streak across day boundaries).
+    - Counts backward day-by-day: as long as consecutive previous days exist in `active_days`,
+      the streak increments. Returns the total consecutive active days.
     """
     attempt_dates = db.session.query(QuizAttempt.submitted_at).filter_by(user_id=user_id).all()
     session_dates = db.session.query(VideoLearningSession.created_at).filter_by(user_id=user_id).all()
@@ -92,9 +106,23 @@ def calculate_user_streak(user_id: int) -> int:
 # ----------------------------------------------------
 
 @learning_bp.route("/dashboard")
+@learning_bp.route("/learning/dashboard")
 @login_required
 def dashboard():
-    """Main SaaS-style personalized dashboard."""
+    """
+    Main SaaS-style personalized student dashboard.
+    
+    Viva Flow:
+    1. Authenticates current user and ensures onboarding is completed.
+    2. Retrieves active learning path and calculates current completion percentage.
+    3. Computes summary statistics: total quizzes completed, average score %, daily streak.
+    4. Categorizes student skills into Strong (>=70%) and Needs Improvement (<65%).
+    5. Prioritizes the recommended next activity:
+       - If weak skills exist -> Practice quiz targeting the weakest concept.
+       - Else if upcoming milestones exist -> Continue next milestone.
+       - Else -> Analyze a new video lecture.
+    6. Fetches top 3 personalized course recommendations and renders `dashboard.html`.
+    """
     user = get_current_user()
     if not user:
         return redirect(url_for("auth_routes.login"))
@@ -189,8 +217,21 @@ def learn_with_video():
 @learning_bp.route("/quiz/generator", methods=["GET", "POST"])
 @login_required
 def quiz_generator():
-    """Generates a new quiz from a video session transcript or custom topic."""
+    """
+    Generates a new quiz from a video session transcript or custom topic.
+    
+    Viva Flow:
+    - GET: Displays form with previously analyzed videos, prefilling topic/difficulty if supplied.
+    - POST:
+      1. Extracts generation parameters: `title`, `num_questions` (5, 10, 15, 20), `difficulty`, `topic_focus`.
+      2. If scoped to a video section, extracts `start_sec` and `end_sec`.
+      3. Retrieves transcript segments from `VideoLearningSession` or active `VIDEO_STORE`.
+      4. Invokes `learning.quiz_generator:generate_and_save_quiz()`.
+      5. Validates question completeness (text + 4 options) before redirecting to `/quiz/<quiz_id>`.
+    """
     user = get_current_user()
+    if not user:
+        return redirect(url_for("auth_routes.login", next=request.path))
 
     # Pre-populate video sessions for selection dropdown
     user_videos = VideoLearningSession.query.filter_by(user_id=user.id).order_by(VideoLearningSession.created_at.desc()).all()
@@ -256,28 +297,52 @@ def quiz_generator():
             end_sec=end_sec,
         )
 
-        if not ok:
+        if not ok or not quiz or not quiz.questions:
+            error_msg = msg or "Could not generate valid questions from the selected source."
             if is_json:
-                return jsonify({"success": False, "error": msg}), 400
-            flash(msg, "danger")
+                return jsonify({"success": False, "error": error_msg}), 400
+            flash(error_msg, "danger")
             return render_template(
                 "learning/quiz_generator.html",
                 user=user,
                 user_videos=user_videos,
-                error=msg,
+                error=error_msg,
                 prefill_topic=topic_focus,
                 csrf_token=generate_csrf_token()
             )
 
+        # Authoritatively verify that saved questions have non-empty text and options
+        valid_saved_questions = [
+            q for q in quiz.questions
+            if (q.question_text or "").strip() and len(q.get_options()) == 4
+        ]
+        if not valid_saved_questions:
+            db.session.delete(quiz)
+            db.session.commit()
+            error_msg = "Quiz generation failed: questions could not be populated."
+            if is_json:
+                return jsonify({"success": False, "error": error_msg}), 400
+            flash(error_msg, "danger")
+            return render_template(
+                "learning/quiz_generator.html",
+                user=user,
+                user_videos=user_videos,
+                error=error_msg,
+                prefill_topic=topic_focus,
+                csrf_token=generate_csrf_token()
+            )
+
+        success_msg = f"Quiz generated successfully with {len(valid_saved_questions)} questions!"
         if is_json:
             return jsonify({
                 "success": True,
-                "message": msg,
+                "message": success_msg,
                 "quiz_id": quiz.id,
+                "question_count": len(valid_saved_questions),
                 "redirect": url_for("learning_routes.take_quiz", quiz_id=quiz.id)
             })
 
-        flash("Quiz generated successfully!", "success")
+        flash(success_msg, "success")
         return redirect(url_for("learning_routes.take_quiz", quiz_id=quiz.id))
 
     return render_template(
@@ -294,11 +359,28 @@ def quiz_generator():
 @learning_bp.route("/quiz/<int:quiz_id>")
 @login_required
 def take_quiz(quiz_id: int):
-    """Interactive quiz taking view. Does NOT leak correct answers to the browser."""
+    """
+    Interactive quiz taking view.
+    
+    CRITICAL SECURITY CHECK FOR VIVA:
+    - Notice that questions are serialized with `include_answer=False`.
+    - This ensures that answers and explanations are NEVER sent to the client browser
+      before submission, preventing cheating via DevTools / Page Source.
+    """
     user = get_current_user()
+    if not user:
+        return redirect(url_for("auth_routes.login", next=request.path))
+
     quiz = Quiz.query.filter_by(id=quiz_id, user_id=user.id).first()
     if not quiz:
         abort(404, description="Quiz not found or unauthorized.")
+
+    is_json = request.is_json or request.headers.get("Accept") == "application/json"
+    if is_json:
+        return jsonify({
+            "success": True,
+            "quiz": quiz.to_dict(include_answers=False)
+        })
 
     return render_template(
         "learning/quiz_take.html",
@@ -312,8 +394,20 @@ def take_quiz(quiz_id: int):
 @learning_bp.route("/quiz/<int:quiz_id>/submit", methods=["POST"])
 @login_required
 def submit_quiz(quiz_id: int):
-    """Authoritative server-side quiz submission scoring."""
+    """
+    Authoritative server-side quiz submission scoring.
+    
+    Viva Flow:
+    1. Collects student answers mapping `question_id` to selected choice ('A'..'D').
+    2. Calls `learning.quiz_generator:score_quiz_submission()` to grade answers against
+       canonical keys in SQLite.
+    3. Triggers automated skill tracking and learning path adaptations.
+    4. Redirects to `/quiz/attempt/<attempt_id>` to show complete results and explanations.
+    """
     user = get_current_user()
+    if not user:
+        return redirect(url_for("auth_routes.login"))
+
     quiz = Quiz.query.filter_by(id=quiz_id, user_id=user.id).first()
     if not quiz:
         abort(404, description="Quiz not found or unauthorized.")
@@ -358,8 +452,20 @@ def submit_quiz(quiz_id: int):
 @learning_bp.route("/quiz/attempt/<int:attempt_id>")
 @login_required
 def quiz_attempt_results(attempt_id: int):
-    """Displays comprehensive results, explanations, timestamp links, and skill updates."""
+    """
+    Displays comprehensive results, explanations, timestamp links, and skill updates.
+    
+    Viva Flow:
+    1. Fetches the completed `QuizAttempt` and its child `QuizResponse` records.
+    2. Calls `learning.skill_tracker:generate_post_quiz_recommendations()`.
+    3. Surfaces wrong questions with exact video timestamps so the student can jump
+       directly to the relevant segment in the lecture video.
+    4. Renders `quiz_results.html`.
+    """
     user = get_current_user()
+    if not user:
+        return redirect(url_for("auth_routes.login"))
+
     attempt = QuizAttempt.query.filter_by(id=attempt_id, user_id=user.id).first()
     if not attempt:
         abort(404, description="Quiz attempt not found or unauthorized.")
@@ -367,7 +473,7 @@ def quiz_attempt_results(attempt_id: int):
     quiz = attempt.quiz
     post_quiz_advice = generate_post_quiz_recommendations(user.id, attempt.id)
 
-    # Fetch video session if linked
+    # Fetch video session if linked to provide video jump-back capabilities
     video_session = None
     if quiz and quiz.video_session_id:
         video_session = db.session.get(VideoLearningSession, quiz.video_session_id)
@@ -390,7 +496,15 @@ def quiz_attempt_results(attempt_id: int):
 @learning_bp.route("/skills")
 @login_required
 def skills_overview():
-    """Displays estimated proficiencies, confidence levels, and trends across all topics."""
+    """
+    Displays estimated proficiencies, confidence levels, and trends across all topics.
+    
+    Viva Flow:
+    - Queries all skills tracked for this user.
+    - Separates skills into Strong (>=70%) and Needs Improvement (<65%).
+    - Renders `skills.html` with interactive skill cards, sample size confidence pills,
+      and performance trend indicators (improving / stable / declining).
+    """
     user = get_current_user()
     all_skills = get_user_skills(user.id)
     strong_skills, weak_skills = get_strong_and_weak_skills(user.id)
@@ -411,7 +525,16 @@ def skills_overview():
 @learning_bp.route("/courses")
 @login_required
 def courses_view():
-    """Personalized course recommendations and searchable course catalogue."""
+    """
+    Personalized course recommendations and searchable course catalogue.
+    
+    Viva Flow:
+    - Calls `get_personalized_recommendations(user.id, limit=6)` to run the
+      5-factor explainable recommender algorithm.
+    - Queries all active catalog courses and user enrollment statuses.
+    - Renders `courses.html` showing why each course was suggested and providing
+      direct links to open educational resources (CS50, MIT OCW, freeCodeCamp).
+    """
     user = get_current_user()
     recommendations = get_personalized_recommendations(user.id, limit=6)
 
@@ -433,7 +556,13 @@ def courses_view():
 @learning_bp.route("/courses/<int:course_id>/status", methods=["POST"])
 @login_required
 def update_course_status(course_id: int):
-    """Enrolls, completes, or dismisses a course for the user."""
+    """
+    Enrolls, completes, or dismisses a course for the user.
+    
+    Viva Flow:
+    - Calls `save_user_course_status()` with new status ('enrolled', 'completed', 'dismissed').
+    - If 'completed', sets progress to 100% and stamps completion timestamp.
+    """
     user = get_current_user()
     is_json = request.is_json or request.headers.get("Accept") == "application/json"
     data = request.get_json(silent=True) if request.is_json else request.form
@@ -461,7 +590,14 @@ def update_course_status(course_id: int):
 @learning_bp.route("/learning-path")
 @login_required
 def learning_path_view():
-    """Interactive learning path view with study scheduler and milestone tracking."""
+    """
+    Interactive learning path view with study scheduler and milestone tracking.
+    
+    Viva Flow:
+    - Fetches active roadmap and calculates overall completion percentage.
+    - Calculates pacing schedule: weekly study hours, remaining hours, and estimated calendar weeks.
+    - Renders `learning_path.html` showing sequential milestone progression.
+    """
     user = get_current_user()
     path = get_or_create_learning_path(user.id)
     path.calculate_progress()
@@ -481,7 +617,13 @@ def learning_path_view():
 @learning_bp.route("/learning-path/milestone/<int:milestone_id>/status", methods=["POST"])
 @login_required
 def update_milestone_status(milestone_id: int):
-    """Updates a milestone's status ('not_started', 'in_progress', 'completed', 'needs_review')."""
+    """
+    Updates a milestone's status ('not_started', 'in_progress', 'completed', 'needs_review').
+    
+    Viva Flow:
+    - Verifies ownership of the milestone's parent learning path.
+    - Updates milestone status and triggers `calculate_progress()` to update total path completion.
+    """
     user = get_current_user()
     milestone = db.session.get(LearningMilestone, milestone_id)
     if not milestone or milestone.learning_path.user_id != user.id:
@@ -517,7 +659,13 @@ def update_milestone_status(milestone_id: int):
 @learning_bp.route("/learning-path/reset", methods=["POST"])
 @login_required
 def reset_learning_path():
-    """Regenerates a fresh learning path based on the user's latest profile."""
+    """
+    Regenerates a fresh learning path based on the user's latest profile.
+    
+    Viva Flow:
+    - Pauses current roadmap and generates a brand new sequenced milestone path
+      reflecting updated target skills or study goals.
+    """
     user = get_current_user()
     profile = user.profile or UserProfile(user_id=user.id)
 
@@ -540,7 +688,14 @@ def reset_learning_path():
 @learning_bp.route("/history")
 @login_required
 def learning_history():
-    """Chronological history of video sessions and quiz attempts."""
+    """
+    Chronological history of video sessions and quiz attempts.
+    
+    Viva Flow:
+    - Queries all analyzed video learning sessions for this user.
+    - Queries all completed quiz attempts with scores and timestamps.
+    - Renders `history.html`.
+    """
     user = get_current_user()
     videos = VideoLearningSession.query.filter_by(user_id=user.id).order_by(VideoLearningSession.created_at.desc()).all()
     attempts = QuizAttempt.query.filter_by(user_id=user.id).order_by(QuizAttempt.submitted_at.desc()).all()

@@ -1,8 +1,26 @@
 """
 learning/path_generator.py
+==========================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module manages structured, goal-oriented student learning paths and implements
+dynamic path adaptation based on empirical quiz outcomes.
 
-Goal-oriented learning path generator, milestone management,
-study-time planner, and dynamic progression adaptation based on quiz results.
+Key Concepts to Explain in a Viva:
+1. Goal-Driven Curriculum Generation:
+   - When a student completes onboarding, their goal and target skill (e.g. Python, Web Dev,
+     DSA, Machine Learning) are matched against curated milestone templates (`GOAL_TEMPLATES`).
+   - A sequential `LearningPath` with ordered `LearningMilestone` objects is persisted in SQLite.
+   - Milestones specify estimated hours, prerequisites, and link to curated catalog courses.
+2. Dynamic Milestone Adaptation (Feedback Loop):
+   - Unlike static syllabi, AetherLearn dynamically adapts to student mastery:
+     - Quiz Score < 50%: The milestone is flagged as `needs_review`, signaling to the student
+       that foundational concepts need reinforcement before advancing.
+     - Quiz Score >= 80%: The milestone is marked `completed` with a completion timestamp,
+       and the subsequent milestone is automatically unlocked from `not_started` to `in_progress`.
+     - Overall path progress percentage is re-calculated: `(completed_milestones / total) * 100`.
+3. Pacing & Schedule Estimation:
+   - Translates remaining milestone hours into calendar weeks based on the student's daily study
+     commitment (`daily_study_minutes`), providing a realistic, personalized pacing roadmap.
 """
 
 from datetime import datetime
@@ -21,7 +39,8 @@ from models.database import (
 
 logger = logging.getLogger("learning.path_generator")
 
-# Goal Milestone Templates
+# Curated milestone templates for major computer science career and learning goals.
+# Tuple format: (title, description, estimated_hours, target_skill, prerequisites)
 GOAL_TEMPLATES = {
     "python": [
         ("Python Fundamentals & Control Flow", "Master syntax, conditionals, for/while loops, and basic terminal input/output.", 4.0, "Python", "None"),
@@ -69,7 +88,12 @@ GOAL_TEMPLATES = {
 
 def get_or_create_learning_path(user_id: int) -> LearningPath:
     """
-    Retrieves the user's active learning path, or creates one based on profile goals.
+    Retrieves the user's active learning path, or automatically creates one.
+    
+    Viva Explanation:
+    - Checks SQLite for an existing `LearningPath` with `status="active"`.
+    - If none exists (e.g. first login after onboarding), reads `UserProfile` to discover
+      the student's `primary_goal` and `target_skill`, then calls `create_learning_path_for_user()`.
     """
     path = LearningPath.query.filter_by(user_id=user_id, status="active").first()
     if path:
@@ -97,6 +121,16 @@ def create_learning_path_for_user(
 ) -> LearningPath:
     """
     Constructs an ordered learning path with milestones customized to the user's goal.
+    
+    Step-by-Step Viva Explanation:
+    1. Template Selection: Matches keywords in `goal` and `target_skill` to choose the closest
+       curriculum template (Python, Web Development, Data Structures, or Machine Learning).
+    2. Deactivates Prior Paths: Sets any existing active paths for this user to `status="paused"`.
+    3. Path Instantiation: Creates a new `LearningPath` row in SQLite.
+    4. Milestone Creation: Loops through each milestone in the template:
+       - Sets milestone 0 to `status="in_progress"` and remaining milestones to `not_started`.
+       - Matches relevant catalog courses by checking if milestone skills appear in course titles/tags.
+    5. Commits to SQLite and returns the active `LearningPath` instance.
     """
     # Match template
     goal_key = "python"
@@ -114,7 +148,7 @@ def create_learning_path_for_user(
     template = GOAL_TEMPLATES.get(goal_key, GOAL_TEMPLATES["python"])
     title = f"Learning Path: {target_skill or goal}"
 
-    # Deactivate existing active paths
+    # Deactivate existing active paths to ensure a single active roadmap
     existing_paths = LearningPath.query.filter_by(user_id=user_id, status="active").all()
     for p in existing_paths:
         p.status = "paused"
@@ -131,7 +165,7 @@ def create_learning_path_for_user(
     db.session.add(path)
     db.session.flush()
 
-    # Find relevant courses to link
+    # Find relevant catalog courses to link to milestones
     all_courses = Course.query.filter_by(is_active=True).all()
 
     for idx, (m_title, m_desc, m_hours, m_skill, m_prereq) in enumerate(template):
@@ -162,9 +196,17 @@ def create_learning_path_for_user(
 
 def adapt_learning_path_after_quiz(user_id: int, attempt_id: int) -> bool:
     """
-    Adapts the active learning path based on quiz attempt performance:
-      - If learner struggled on a prerequisite/topic (< 50%), flags the milestone as 'needs_review'.
-      - If learner achieved mastery (>= 80%) on the in-progress milestone's target skill, advances to completed!
+    Dynamically adapts the active learning path based on quiz attempt performance.
+    
+    Viva Adaptive Rules:
+    - Low Score (< 50%): If the student struggled on concepts covered by a milestone,
+      the milestone status is flagged as `needs_review`. This signals to the student and
+      the dashboard that revision is required before moving on.
+    - High Score (>= 80%): Mastery is proven! The milestone is updated to `completed` and
+      its completion timestamp is recorded.
+    - Milestone Unlocking: Automatically finds the next `not_started` milestone and advances
+      it to `in_progress`.
+    - Path Progress Update: Re-calculates total completion percentage via `path.calculate_progress()`.
     """
     path = LearningPath.query.filter_by(user_id=user_id, status="active").first()
     if not path or not path.milestones:
@@ -214,7 +256,13 @@ def adapt_learning_path_after_quiz(user_id: int, attempt_id: int) -> bool:
 
 def calculate_study_schedule(user_id: int, learning_path: LearningPath) -> Dict[str, Any]:
     """
-    Calculates estimated timeline and pacing based on user's available study time.
+    Calculates estimated completion timeline and pacing based on available study time.
+    
+    Viva Explanation:
+    - Reads student's `daily_study_minutes` from their profile (defaults to 45 min/day = 5.25 hrs/week).
+    - Sums estimated hours across all milestones and remaining uncompleted milestones.
+    - Divides remaining hours by weekly study hours to give an estimated calendar duration
+      (e.g., "~4.5 weeks remaining").
     """
     profile = UserProfile.query.filter_by(user_id=user_id).first()
     daily_mins = profile.daily_study_minutes if profile and profile.daily_study_minutes else 45

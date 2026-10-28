@@ -1,13 +1,32 @@
 """
 learning/recommendation_engine.py
+=================================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module implements an explainable, multi-factor recommendation engine that suggests
+relevant educational courses from the catalog to individual students.
 
-Personalized course recommendation engine using explainable weighted ranking.
-Considers:
-  - User's primary learning/career goal
-  - Identified weak skills from quiz attempts (skill gaps)
-  - Selected learning interests
-  - Preferred learning difficulty & duration fit
-  - Exclusion of completed or dismissed courses
+Key Concepts to Explain in a Viva:
+1. Explainable AI (XAI) in Education:
+   - Many recommender systems use opaque collaborative filtering or deep neural nets that
+     cannot explain *why* a course was recommended.
+   - AetherLearn uses an Explainable Weighted Ranking Model where every recommendation
+     is accompanied by transparent, human-readable justification reasons (e.g. "Directly
+     teaches your target skill 'Python'", "Reinforces weak topic 'Recursion'").
+2. 5-Factor Weighted Scoring Formula:
+   - Composite Score (0.0 to 1.0) =
+       (0.30 * Goal Match) +
+       (0.30 * Skill Gap Match) +
+       (0.15 * Interest Match) +
+       (0.15 * Difficulty Match) +
+       (0.10 * Time Fit)
+   - Goal Match (30%): Aligns with student's `target_skill` and `primary_goal`.
+   - Skill Gap Match (30%): Identifies topics where the student scored <65% on quizzes.
+   - Interest Match (15%): Matches topics selected in the student's onboarding questionnaire.
+   - Difficulty Match (15%): Compares student's level preference (beginner/intermediate/advanced).
+   - Time Fit (10%): Evaluates course hours against the student's weekly study budget.
+3. Clean Filtering:
+   - Completed and dismissed courses are excluded to avoid recommending redundant content.
+   - Enrolled courses are tagged so the UI displays "Continue" rather than "Enroll".
 """
 
 import logging
@@ -33,12 +52,22 @@ def calculate_course_match_score(
     completed_course_ids: List[int]
 ) -> Tuple[float, List[str]]:
     """
-    Computes a normalized relevance score [0.0, 1.0] and generates transparent explanations:
-      - Goal Match: alignment with target_skill and primary_goal
-      - Skill Gap Match: course covers skills where user scored < 65% on quizzes
-      - Interest Match: course tags match profile interests
-      - Difficulty Match: course difficulty matches learner's preference / level
-      - Time Fit: course duration matches learner's weekly available study time
+    Computes a normalized relevance score [0.0, 1.0] and generates transparent explanations.
+    
+    Step-by-Step Viva Explanation:
+    1. Exclusion Check: If course is already in `completed_course_ids`, returns score 0.0.
+    2. Sub-Score Evaluations:
+       - Goal Match (30%): Checks if course title/skills contain user's `target_skill` (score 1.0)
+         or keywords from `primary_goal` (score 0.6).
+       - Skill Gap Match (30%): Checks if course covers any topic where student has <65% proficiency.
+       - Interest Match (15%): Compares against topics selected in onboarding.
+       - Difficulty Match (15%): Checks if difficulty matches preferred level.
+       - Time Fit (10%): Checks if `course.duration_hours / weekly_study_hours` is between 1-4 weeks.
+    3. Multi-Factor Summation: Multiplies each sub-score by its designated weight.
+    4. Explanations: Appends human-readable justifications explaining the match.
+
+    Returns:
+        Tuple[float, List[str]]: (composite_score_between_0_and_1, list_of_reasons)
     """
     if course.id in completed_course_ids:
         return 0.0, ["Already completed"]
@@ -127,7 +156,16 @@ def calculate_course_match_score(
 def get_personalized_recommendations(user_id: int, limit: int = 6) -> List[Dict[str, Any]]:
     """
     Ranks courses for the authenticated user based on profile, skills, and quiz history.
-    Filters out courses already completed or dismissed by the user.
+    
+    Step-by-Step Viva Explanation:
+    1. Fetches student's `UserProfile` (goals, interests, weekly study budget).
+    2. Identifies skill gaps: Queries `UserSkill` where `estimated_proficiency < 65.0`.
+    3. Finds excluded courses: Any course where `UserCourse.status` is 'completed' or 'dismissed'.
+    4. Evaluates all active catalog courses using `calculate_course_match_score()`.
+    5. Sorts courses descending by composite score, returning the top `limit` (default 6).
+
+    Returns:
+        List[Dict]: Ranked course dictionaries with scores, reasons, and enrollment status.
     """
     profile = UserProfile.query.filter_by(user_id=user_id).first()
     
@@ -141,7 +179,7 @@ def get_personalized_recommendations(user_id: int, limit: int = 6) -> List[Dict[
 
     user_interests = profile.get_interests_list() if profile else []
 
-    # Completed or dismissed courses
+    # Completed or dismissed courses to exclude from recommendations
     user_courses = UserCourse.query.filter_by(user_id=user_id).all()
     completed_ids = {uc.course_id for uc in user_courses if uc.status in ("completed", "dismissed")}
     enrolled_ids = {uc.course_id for uc in user_courses if uc.status in ("enrolled", "saved", "in_progress")}
@@ -178,6 +216,14 @@ def get_personalized_recommendations(user_id: int, limit: int = 6) -> List[Dict[
 def save_user_course_status(user_id: int, course_id: int, status: str) -> Tuple[bool, str]:
     """
     Saves or updates course status for a user ('saved', 'enrolled', 'in_progress', 'completed', 'dismissed').
+    
+    Viva Explanation:
+    - Allows students to bookmark courses, start them, or mark them completed.
+    - If status is 'completed', sets `progress_percent = 100.0` and stamps `completed_at = now()`.
+    - Updates `UserCourse` bridge table in SQLite.
+
+    Returns:
+        Tuple[bool, str]: (success, status_message)
     """
     valid_statuses = {"saved", "enrolled", "in_progress", "completed", "dismissed"}
     status = status.lower().strip()

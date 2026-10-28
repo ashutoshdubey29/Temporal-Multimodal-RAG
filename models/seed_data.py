@@ -1,9 +1,19 @@
 """
 models/seed_data.py
+===================
+VIVA / ARCHITECTURAL OVERVIEW:
+This module seeds the database with curated, legitimate educational courses when
+the application is started for the first time.
 
-Curated, legitimate educational resources seeded into the course catalogue.
-Uses real, accessible URLs from established open educational platforms
-(Harvard CS50, MIT OpenCourseWare, freeCodeCamp, MDN, Python.org, Kaggle).
+Why Seeding is Important in a Viva:
+- Cold Start Problem: When a new user registers on an empty platform, recommendation
+  algorithms and course browsers would be completely empty.
+- Curated External Content: Instead of hallucinated dummy links, we use real,
+  accessible URLs from respected open educational platforms (Harvard CS50, MIT OCW,
+  freeCodeCamp, MDN Web Docs, Python.org, Kaggle).
+- Idempotent Seeding: The function checks `Course.query.count()`. If records already
+  exist, it gracefully skips insertion to prevent duplicate records every time the
+  server restarts.
 """
 
 import logging
@@ -11,6 +21,8 @@ from models.database import db, Course
 
 logger = logging.getLogger("models.seed_data")
 
+# Curated catalog of open-access courses covering foundational CS, Web, ML, and Security.
+# Each entry specifies difficulty, skills covered, prerequisites, and resource types.
 CURATED_COURSES = [
     {
         "title": "CS50: Introduction to Computer Science",
@@ -146,7 +158,16 @@ CURATED_COURSES = [
 
 
 def seed_courses_if_needed():
-    """Seeds curated courses only if the courses table is empty."""
+    """
+    Populates the Course table with curated educational courses if it is currently empty.
+    
+    Viva Explanation:
+    - This function is called during application initialization (in `models/database.py:init_db()`).
+    - It performs an idempotent check: `Course.query.count()`.
+    - If 0 courses exist, it loops through `CURATED_COURSES`, instantiates `Course` ORM
+      objects, and commits them in a single atomic database transaction.
+    - If courses already exist, it does nothing, preserving any user modifications or new courses.
+    """
     existing_count = Course.query.count()
     if existing_count > 0:
         logger.info("Course catalogue already seeded (%d courses found).", existing_count)
@@ -169,5 +190,6 @@ def seed_courses_if_needed():
         )
         db.session.add(course)
 
+    # Commit all course inserts in a single transaction
     db.session.commit()
     logger.info("Course catalogue seeded successfully.")
